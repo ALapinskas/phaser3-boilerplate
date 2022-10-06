@@ -1,0 +1,22 @@
+{
+    "height": 16,
+    "width": 16,
+    "layers": {
+        "grass": {
+            "width": 128,
+            "height": 48,
+            "opacity": 1,
+            "type": "tilelayer",
+            "visible": true,
+            "x": 0,
+            "y": 0
+        }
+    },
+    "nextobjectid": 1,
+    "orientation": "isometric",
+    "properties": {},
+    "renderorder": "right-down",
+    "tileheight": 16,
+    "tilewidth": 16,
+    "version": 1
+}

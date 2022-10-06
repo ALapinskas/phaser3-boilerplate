@@ -1,0 +1,20 @@
+{
+  "name": "phaser-game",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "./node_modules/.bin/autoreload-server -w '**/**.{html,css,js}' -r '**/**.{html,css,js}' ./",
+    "update": "node ./build.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Arturas-Alfredas Lapinskas",
+  "license": "MIT",
+  "dependencies": {
+    "http-server": "^14.1.1",
+    "matter-js": "^0.18.0",
+    "phaser": "^3.55.2",
+    "phaser3-rex-plugins": "^1.1.72",
+    "simple-autoreload-server": "^0.2.15"
+  }
+}
