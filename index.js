@@ -38,14 +38,24 @@ class MainScene extends Phaser.Scene {
         this.teacherTexts = [
             {
                 "active": true,
-                "text": "Hello student! My name is Monica, i'll be you teacher today! Press any key, or click to continue..."
+                "text": "Hello student! My name is Monica, i'll be you teacher today! Press Enter key, or click to continue..."
             },
             {
                 "active": false,
-                "text": "This is your character. To move use w,a,d,s, or arrow buttons on your keyboard.\nComplete objectives on the right to finish the exercise. Press any key, or click to continue..."
+                "text": "This is your character. To move use w,a,d,s, or arrow buttons on your keyboard.\nComplete objectives on the right to finish the exercise. Press Enter key, or click to continue..."
+            },
+            {
+                "active": false,
+                "text": "Well done! When you come closer, the car become highlighted, this means you can interact with it, to do that you need to press action button 'e' or 'Enter'. Press Enter key, or click to continue..."
+            },
+            {
+                "active": false,
+                "text": "Your task list is now updated, please complete new tasks to finish the education. Press Enter key, or click to continue..."
             }
         ];
 
+        this.firstPartTasksFinished = false;
+        this.tasksFirstTracker = [false, false, false, false, false];
         this.pressKeyActionPlayer = this.pressKeyActionPlayer.bind(this);
         this.removeKeyActionPlayer = this.removeKeyActionPlayer.bind(this);
         this.pressKeyActionCar = this.pressKeyActionCar.bind(this);
@@ -251,27 +261,49 @@ class MainScene extends Phaser.Scene {
                 line: 3,
             }
         }).layout();
-        /*
-        this.tasksSecond = this.rexUI.add.fixWidthButtons({
-            x: 640,
-            y: 515,
-            buttons: [
-                this.createCheckBox("Sit in a car"),
-                this.createCheckBox("Drive around red building in the center"),
-                this.createCheckBox("Park car on the park, leave the car")
-                // ...
-            ],
-            // rtl: false,
-            align: 0,
-            click: {
-                mode: 'pointerup',
-                clickInterval: 100
-            },
-        }).layout();*/
 
         this.helperText.start(this.teacherTexts[0].text, 50);
 
+        this.checkpoint1 = this.add.rectangle(230, 250, 120, 10);
+        this.checkpoint2 = this.add.rectangle(380, 370, 10, 100);
+        this.checkpoint3 = this.add.rectangle(470, 250, 80, 10);
+
+        const firstCheck = this.matter.add.gameObject(this.checkpoint1, {isSensor:true});
+        firstCheck.setData("name", "checkpoint1");
+        const secondCheck = this.matter.add.gameObject(this.checkpoint2, {isSensor:true});
+        secondCheck.setData("name", "checkpoint2");
+        const thirdCheck = this.matter.add.gameObject(this.checkpoint3, {isSensor:true});
+        thirdCheck.setData("name", "checkpoint3");
+
+        this.checkpointsReached = [];
+
         document.addEventListener('click', e => this.userClick(e));
+        this.matter.world.on("collisionstart", (event, bodyA, bodyB) => {
+            const bodyBName = bodyB.gameObject.getData("name"),
+                bodyAType = bodyA.gameObject.texture && bodyA.gameObject.texture.key;
+        
+            if (bodyBName === "checkpoint1" && bodyAType === "car") {
+                console.log("reached first checkpoint");
+                this.checkpointsReached[0] = true; 
+            } else if (bodyBName === "checkpoint1" && bodyAType !== "car") {
+                console.warn("please get in the car!!!");
+            }
+            if (bodyBName === "checkpoint2" && bodyAType === "car") {
+                console.log("reached second checkpoint");
+                this.checkpointsReached[1] = true;
+            } else if (bodyBName === "checkpoint2" && bodyAType !== "car") {
+                console.warn("please get in the car!!!");
+            }
+            if (bodyBName === "checkpoint3" && bodyAType === "car") {
+                console.log("reached third checkpoint");
+                this.checkpointsReached[2] = true;
+            } else if (bodyBName === "checkpoint3" && bodyAType !== "car") {
+                console.warn("please get in the car!!!");
+            }
+            if(this.checkpointsReached.length === 3) {
+                this.tasksSecond.buttons[1].getElement("icon").setFillStyle(COLOR_LIGHT);
+            }
+        });
     }
 
     createCheckBox(text) {
@@ -300,11 +332,11 @@ class MainScene extends Phaser.Scene {
         keyPressed[code] = true;
 
         console.log(`Key code value: ${code}`);
-        if (this.isTeacherTalkActive()) {
+        if (keyPressed["Enter"] && this.isTeacherTalkActive()) {
             this.stepTeacherTalk();
             return;
         }
-        this.checkTasksStatus();
+        this.checkTasksStatus(keyPressed);
         if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
             this.player.setVelocityY(-1);
 
@@ -503,6 +535,11 @@ class MainScene extends Phaser.Scene {
                     pipelineInstance.add(car, {thickness: 1});
                     car.active = true;
                 }
+                if(!this.firstPartTasksFinished) {
+                    this.tasksFirst.buttons[4].getElement("icon").setFillStyle(COLOR_LIGHT);
+                    this.tasksFirstTracker[4] = true;
+                    this.isAllTasksAreComplete();
+                }
             } else {
                 car.active = false;
                 pipelineInstance.remove(car);
@@ -511,28 +548,34 @@ class MainScene extends Phaser.Scene {
     }
 
     stepTeacherTalk() {
-        const pipelineInstance = this.plugins.get('rexoutlinepipelineplugin');
-        console.log("step teacher talk");
+        const pipelineInstance = this.plugins.get("rexoutlinepipelineplugin");
         if (this.teacherTexts[0].active) {
             this.teacherTexts[0].active = false;
             this.teacherTexts[1].active = true;
             this.helperText.start(this.teacherTexts[1].text, 50);
-            this.helperText.childrenMap.icon.anims.restart(false, true)
+            this.helperText.childrenMap.icon.anims.restart(false, true);
             this.line = this.add.line(0,0,this.player.x+28,this.player.y+55,this.player.x + 80,this.player.y + 162, COLOR_STROKE);
             this.line.originX = 0;
             this.line.originY = 0;
             pipelineInstance.add(this.player, {thickness: 1});
         } else {
-            this.teacherTexts[1].active = false;
-            this.helperText.hide();
-            this.line.destroy();
-            pipelineInstance.remove(this.player);
-            this.createHelpIcon();
+            if(!this.firstPartTasksFinished || this.teacherTexts[3].active) {
+                this.teacherTexts[1].active = false;
+                this.teacherTexts[3].active = false;
+                this.helperText.hide();
+                this.line.destroy();
+                pipelineInstance.remove(this.player);
+                this.createHelpIcon();
+            } else {
+                this.teacherTexts[2].active = false;
+                this.teacherTexts[3].active = true;
+                this.helperText.start(this.teacherTexts[3].text, 50);
+                this.helperText.childrenMap.icon.anims.restart(false, true);
+            }
         }
     }
 
     userClick(e) {
-        console.log("user click");
         if (this.isTeacherTalkActive()) {
             this.stepTeacherTalk();
             return;
@@ -579,27 +622,82 @@ class MainScene extends Phaser.Scene {
         }).layout();
 
         this.helpIcon.on("button.click", (btn, i, pointer, event) => {
-            console.log("click");
             if (!this.helperText.visible) {
-                this.teacherTexts[0].active = true;
+                if (!this.firstPartTasksFinished) {
+                    this.teacherTexts[0].active = true;
+                } else {
+                    this.teacherTexts[2].active = true;
+                }
                 this.helperText.show();
             }
         });
 
         this.helpIcon.on("button.over", (btn, i, pointer, event) => {
-            console.log("over");
             if (!this.helperText.visible)
                 document.body.style.cursor = "pointer";
         });
 
         this.helpIcon.on("button.out", (btn, i, pointer, event) => {
-            console.log("out");
             document.body.style.cursor = "auto";
         });
     }
 
-    checkTasksStatus() {
-        this.firstPartObjectivesComplete
+    checkTasksStatus(keyPressed) {
+        console.log("check task status");
+        if(!this.firstPartTasksFinished) {
+            if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
+                this.tasksFirst.buttons[0].getElement("icon").setFillStyle(COLOR_LIGHT);
+                this.tasksFirstTracker[0] = true; 
+            }
+            if (keyPressed["ArrowLeft"] || keyPressed["KeyA"]){
+                this.tasksFirst.buttons[2].getElement("icon").setFillStyle(COLOR_LIGHT);
+                this.tasksFirstTracker[2] = true;
+            }
+            if (keyPressed["ArrowRight"] || keyPressed["KeyD"]){
+                this.tasksFirst.buttons[3].getElement("icon").setFillStyle(COLOR_LIGHT);
+                this.tasksFirstTracker[3] = true;
+            }
+            if (keyPressed["ArrowDown"] || keyPressed["KeyS"]){
+                this.tasksFirst.buttons[1].getElement("icon").setFillStyle(COLOR_LIGHT);
+                this.tasksFirstTracker[1] = true;
+            }
+            this.isAllTasksAreComplete();
+        } else {
+
+        }
+    }
+
+    isAllTasksAreComplete() {
+        console.log("is all tasks are complete?");
+        if(!this.firstPartTasksFinished) {
+            if( this.tasksFirstTracker[0] && this.tasksFirstTracker[1] && this.tasksFirstTracker[2] && this.tasksFirstTracker[3] && this.tasksFirstTracker[4]) {
+                this.firstPartTasksFinished = true; 
+                this.tasksFirst.destroy();
+                this.helperText.show();
+                this.helperText.childrenMap.icon.anims.restart(false, true);
+                this.helperText.start(this.teacherTexts[2].text, 50);
+                this.teacherTexts[2].active = true;
+                this.tasksSecond = this.rexUI.add.fixWidthButtons({
+                    x: 640,
+                    y: 500,
+                    buttons: [
+                        this.createCheckBox("Sit in a car (e, Enter)"),
+                        this.createCheckBox("Drive around red building in the center"),
+                        this.createCheckBox("Park car on the park, leave the car")
+                        // ...
+                    ],
+                    // rtl: false,
+                    align: 0,
+                    click: {
+                        mode: 'pointerup',
+                        clickInterval: 100
+                    },
+                    space: {
+                        line: 3,
+                    }
+                }).layout();
+            }
+        }
     }
 }
 
