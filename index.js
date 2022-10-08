@@ -46,7 +46,7 @@ class MainScene extends Phaser.Scene {
             },
             {
                 "active": false,
-                "text": "Well done! When you come closer, the car become highlighted, this means you can interact with it, to do that you need to press action button 'e' or 'Enter'. Press Enter key, or click to continue..."
+                "text": "Well done! When you come closer, the car become highlighted, this means you can interact with it. Press 'e' or 'Enter' to start interaction. Press Enter key, or click to continue..."
             },
             {
                 "active": false,
@@ -237,6 +237,7 @@ class MainScene extends Phaser.Scene {
                 text: 0,
             }
         });
+        this.helperText.setDepth(1);
 
         //this.helperText.start("To move your character use w,a,d,s, or arrow buttons on your keyboard.\nTo take an action press e key, or Enter", 100);
 
@@ -267,6 +268,7 @@ class MainScene extends Phaser.Scene {
         this.checkpoint1 = this.add.rectangle(230, 250, 120, 10);
         this.checkpoint2 = this.add.rectangle(380, 370, 10, 100);
         this.checkpoint3 = this.add.rectangle(470, 250, 80, 10);
+        this.parkCheckpoint = this.add.rectangle(680, 120, 50, 30, COLOR_LIGHT, 0.6);
 
         const firstCheck = this.matter.add.gameObject(this.checkpoint1, {isSensor:true});
         firstCheck.setData("name", "checkpoint1");
@@ -274,6 +276,10 @@ class MainScene extends Phaser.Scene {
         secondCheck.setData("name", "checkpoint2");
         const thirdCheck = this.matter.add.gameObject(this.checkpoint3, {isSensor:true});
         thirdCheck.setData("name", "checkpoint3");
+
+        const parkCheck = this.matter.add.gameObject(this.parkCheckpoint, {isSensor:true});
+        parkCheck.setData("name", "parkCheckpoint");
+        parkCheck.setDepth(0);
 
         this.checkpointsReached = [];
 
@@ -283,24 +289,21 @@ class MainScene extends Phaser.Scene {
                 bodyAType = bodyA.gameObject.texture && bodyA.gameObject.texture.key;
         
             if (bodyBName === "checkpoint1" && bodyAType === "car") {
-                console.log("reached first checkpoint");
                 this.checkpointsReached[0] = true; 
             } else if (bodyBName === "checkpoint1" && bodyAType !== "car") {
                 console.warn("please get in the car!!!");
             }
             if (bodyBName === "checkpoint2" && bodyAType === "car") {
-                console.log("reached second checkpoint");
                 this.checkpointsReached[1] = true;
             } else if (bodyBName === "checkpoint2" && bodyAType !== "car") {
                 console.warn("please get in the car!!!");
             }
             if (bodyBName === "checkpoint3" && bodyAType === "car") {
-                console.log("reached third checkpoint");
                 this.checkpointsReached[2] = true;
             } else if (bodyBName === "checkpoint3" && bodyAType !== "car") {
                 console.warn("please get in the car!!!");
             }
-            if(this.checkpointsReached.length === 3) {
+            if ((this.checkpointsReached.filter(item => item === true)).length === 3) {
                 this.tasksSecond.buttons[1].getElement("icon").setFillStyle(COLOR_LIGHT);
             }
         });
@@ -421,6 +424,21 @@ class MainScene extends Phaser.Scene {
             this.stepTeacherTalk();
             return;
         }
+        if (this.firstPartTasksFinished) {
+            const carPosX = activeCarSprite.body.position.x,
+                carPosY = activeCarSprite.body.position.y,
+                checkpointX = this.parkCheckpoint.x,
+                checkpointY = this.parkCheckpoint.y,
+                carTopLeftPosX = carPosX + (activeCarSprite.width / 2),
+                carTopLeftPosY = carPosY,
+                checkpointTopLeftX = checkpointX + (this.parkCheckpoint.width / 2),
+                checkpointTopLeftY = checkpointY;
+            if ((checkpointTopLeftX + 15 > carTopLeftPosX && carTopLeftPosX > checkpointTopLeftX) && 
+                (checkpointTopLeftY + 10 > carTopLeftPosY && carTopLeftPosY > checkpointTopLeftY)) {
+                    console.warn("reached!!!");
+                    this.tasksSecond.buttons[2].getElement("icon").setFillStyle(COLOR_LIGHT);
+            }
+        }
         //if (keyPressed["Space"]) {
         //    this.startFireAction();
         //}
@@ -442,7 +460,6 @@ class MainScene extends Phaser.Scene {
         //if (code === "Space") {
         //    this.stopFireAction(); 
         //}
-        console.log(code);
         if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
             //this.car.thrust(1)
         }
@@ -464,31 +481,32 @@ class MainScene extends Phaser.Scene {
     sitInACar(closestCar) {
         this.destroyPlayer();
         this.setupCar(closestCar);
-        console.log("sitInACar");
-        this.tasksSecond.buttons[0].getElement("icon").setFillStyle(COLOR_LIGHT);
-        this.objectivesComplete.sitInACar = true;
+        if(this.firstPartTasksFinished) {
+            this.tasksSecond.buttons[0].getElement("icon").setFillStyle(COLOR_LIGHT);
+            this.objectivesComplete.sitInACar = true;
+        }
     }
 
     destroyPlayer() {
         console.log("destroy");
         document.removeEventListener('keydown', this.pressKeyActionPlayer);
         document.removeEventListener('keyup', this.removeKeyActionPlayer);
-        console.log("destroy");
         this.player.destroy();
     }
 
     setupCar(closestCar) {
         this.cars[closestCar].audio.startEngine.play();
         this.activeCar = closestCar;
-        console.log("setup moving on a car");
         document.addEventListener('keydown', this.pressKeyActionCar);
         document.addEventListener('keyup', this.removeKeyActionCar);
     }
 
     leaveCar() {
-        console.log("get out of car");
         this.cars[this.activeCar].audio.startEngine.stop();
         this.activeCar = undefined;
+        if (this.firstPartTasksFinished) {
+            this.tasksSecond.buttons[3].getElement("icon").setFillStyle(COLOR_LIGHT);
+        }
         document.removeEventListener('keydown', this.pressKeyActionCar);
         document.removeEventListener('keyup', this.removeKeyActionCar);
     }
@@ -498,7 +516,6 @@ class MainScene extends Phaser.Scene {
         this.player = this.matter.add.sprite(posX, posY, 'dudes');
         this.player.setFrictionAir(0.6);
         this.player.setMass(1);
-        //this.player.setDensity(0.01);
         document.addEventListener('keydown', this.pressKeyActionPlayer);
         document.addEventListener('keyup', this.removeKeyActionPlayer);
     }
@@ -512,6 +529,7 @@ class MainScene extends Phaser.Scene {
         car.setFrictionAir(0.9);
         car.setMass(mass);
         car.setDensity(0.1);
+        car.setDepth(1);
         car.audio = { 
             startEngine: this.sound.add("startEngine1"),
             rearMoveAudio: this.sound.add("carRearMove") }
@@ -554,16 +572,18 @@ class MainScene extends Phaser.Scene {
             this.teacherTexts[1].active = true;
             this.helperText.start(this.teacherTexts[1].text, 50);
             this.helperText.childrenMap.icon.anims.restart(false, true);
-            this.line = this.add.line(0,0,this.player.x+28,this.player.y+55,this.player.x + 80,this.player.y + 162, COLOR_STROKE);
-            this.line.originX = 0;
-            this.line.originY = 0;
+            this.pointer = this.add.polygon(50, 100, [this.player.x, this.player.y, this.player.x + 50, this.player.y + 200, this.player.x + 100, this.player.y + 200], COLOR_PRIMARY);
+            this.pointer.setStrokeStyle(2, COLOR_LIGHT);
+            this.pointer.originX = 0;
+            this.pointer.originY = 0;
+            this.pointer.setDepth(0);
             pipelineInstance.add(this.player, {thickness: 1});
         } else {
             if(!this.firstPartTasksFinished || this.teacherTexts[3].active) {
                 this.teacherTexts[1].active = false;
                 this.teacherTexts[3].active = false;
                 this.helperText.hide();
-                this.line.destroy();
+                this.pointer.destroy();
                 pipelineInstance.remove(this.player);
                 this.createHelpIcon();
             } else {
@@ -679,11 +699,12 @@ class MainScene extends Phaser.Scene {
                 this.teacherTexts[2].active = true;
                 this.tasksSecond = this.rexUI.add.fixWidthButtons({
                     x: 640,
-                    y: 500,
+                    y: 480,
                     buttons: [
                         this.createCheckBox("Sit in a car (e, Enter)"),
                         this.createCheckBox("Drive around red building in the center"),
-                        this.createCheckBox("Park car on the park, leave the car")
+                        this.createCheckBox("Park car near orange track on the parking"),
+                        this.createCheckBox("Leave the car (e, Enter)")
                         // ...
                     ],
                     // rtl: false,
