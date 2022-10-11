@@ -16,7 +16,7 @@ class MainScene extends Phaser.Scene {
             Enter:false, KeyE:false };
         this.activeCar;
         this.cars = {};
-        this.objectivesComplete = {sitInACar: false, driveAround: false, leaveCar: false};
+        this.objectivesComplete = { sitInACar: false, driveAround: false, leaveCar: false };
         this.load.image({
             key: 'tiles',
             url: 'images/sity-2d/Tilemap/tilemap_packed.png',
@@ -35,27 +35,40 @@ class MainScene extends Phaser.Scene {
         this.load.audio('startEngine1', './assets/engine_start.mp3');
         this.load.audio('carRearMove', './assets/car_rearmove.mp3');
 
-        this.teacherTexts = [
+        this.helpTexts = [
             {
                 "active": true,
-                "text": "Hello student! My name is Monica, i'll be you teacher today! Press Enter key, or click to continue..."
+                "last": false,
+                "text": [ 
+                    "Hello student! My name is Monica, i'll be you teacher today! Press Enter key, or click to continue..."
+                ]
             },
             {
                 "active": false,
+                "last": true,
                 "text": "This is your character. To move use w,a,d,s, or arrow buttons on your keyboard.\nComplete objectives on the right to finish the exercise. Press Enter key, or click to continue..."
             },
             {
                 "active": false,
+                "last": false,
                 "text": "Well done! When you come closer, the car become highlighted, this means you can interact with it. Press 'e' or 'Enter' to start interaction. Press Enter key, or click to continue..."
             },
             {
                 "active": false,
-                "text": "Your task list is now updated, please complete new tasks to finish the education. Press Enter key, or click to continue..."
+                "last": true,
+                "text": "Next tasks will be with driving the car. While you will be inside the car push 'w' or ↑ to gear up, 's' or ↓ to break, or move backward. While you're moving press 'a' or ← to turn left, 'd' or → to turn right. Press Enter key, or click to continue..."
+            },
+            {
+                "active": false,
+                "last": true,
+                "text": "Congratulation's you finished all the tasks! Exam is passed. Press Enter key, or click to continue..."
             }
         ];
 
         this.firstPartTasksFinished = false;
-        this.tasksFirstTracker = [false, false, false, false, false];
+        this.allTasksAreComplete = false;
+        this.isHelpDialogActive = true;
+        this.tasksTracker = [[false, false, false, false, false], [false, false, false, false]];
         this.pressKeyActionPlayer = this.pressKeyActionPlayer.bind(this);
         this.removeKeyActionPlayer = this.removeKeyActionPlayer.bind(this);
         this.pressKeyActionCar = this.pressKeyActionCar.bind(this);
@@ -119,14 +132,7 @@ class MainScene extends Phaser.Scene {
         //dudes.push(this.add.existing(new Dude(this, 100, 380, 'walk', 'northWest', 20)));
         //dudes.push(this.add.existing(new Dude(this, 620, 140, 'walk', 'south', 30)));
         this.buildMap();
-        cursors = this.input.keyboard.createCursorKeys();
-        //platforms = this.physics.add.staticGroup();
-    
-        //platforms.create(400, 568, 'ground').setScale(2).refreshBody();
-    
-        //platforms.create(600, 400, 'ground');
-        //platforms.create(50, 250, 'ground');
-        //platforms.create(750, 220, 'ground');   
+        cursors = this.input.keyboard.createCursorKeys(); 
     }
 
     update() {
@@ -186,10 +192,11 @@ class MainScene extends Phaser.Scene {
         housesLayer.setCollisionByProperty({ collides: true });
         this.matter.world.convertTilemapLayer(housesLayer);
 
-        this.cars["car"] = this.createCar(72, 100, 180, 0.9, 100, 'car');
+        this.cars["car"] = this.createCar(248, 500, 0, 0.9, 100, 'car');
 
         this.cars["car2"] = this.createCar(680, 93, 90, 1.2, 500, 'car2');
         
+        this.pipelineInstance = this.plugins.get('rexoutlinepipelineplugin');
         //this.player.setCollideWorldBounds(true);
         housesLayer.setCollisionByProperty({ collides: true });
         this.matter.world.setBounds(0, 0, background.width, background.height);
@@ -198,7 +205,7 @@ class MainScene extends Phaser.Scene {
         //this.matter.add.collider(this.player, riverLayer);
         //this.matter.add.collider(this.player, this.cars);
     
-        this.createPlayer(120, 80);
+        this.createPlayer(200, 450);
 
         this.helperText = this.rexUI.add.textBox({
             x: 400,
@@ -263,8 +270,8 @@ class MainScene extends Phaser.Scene {
             }
         }).layout();
 
-        this.helperText.start(this.teacherTexts[0].text, 50);
-
+        this.helperText.start(this.helpTexts[0].text, 50);
+        
         this.checkpoint1 = this.add.rectangle(230, 250, 120, 10);
         this.checkpoint2 = this.add.rectangle(380, 370, 10, 100);
         this.checkpoint3 = this.add.rectangle(470, 250, 80, 10);
@@ -285,27 +292,10 @@ class MainScene extends Phaser.Scene {
 
         document.addEventListener('click', e => this.userClick(e));
         this.matter.world.on("collisionstart", (event, bodyA, bodyB) => {
-            const bodyBName = bodyB.gameObject.getData("name"),
+            const bodyBName = bodyB ? bodyB.gameObject.getData("name") : "wall",
                 bodyAType = bodyA.gameObject.texture && bodyA.gameObject.texture.key;
         
-            if (bodyBName === "checkpoint1" && bodyAType === "car") {
-                this.checkpointsReached[0] = true; 
-            } else if (bodyBName === "checkpoint1" && bodyAType !== "car") {
-                console.warn("please get in the car!!!");
-            }
-            if (bodyBName === "checkpoint2" && bodyAType === "car") {
-                this.checkpointsReached[1] = true;
-            } else if (bodyBName === "checkpoint2" && bodyAType !== "car") {
-                console.warn("please get in the car!!!");
-            }
-            if (bodyBName === "checkpoint3" && bodyAType === "car") {
-                this.checkpointsReached[2] = true;
-            } else if (bodyBName === "checkpoint3" && bodyAType !== "car") {
-                console.warn("please get in the car!!!");
-            }
-            if ((this.checkpointsReached.filter(item => item === true)).length === 3) {
-                this.tasksSecond.buttons[1].getElement("icon").setFillStyle(COLOR_LIGHT);
-            }
+            this.checkCheckpoints(bodyBName, bodyAType)
         });
     }
 
@@ -335,7 +325,7 @@ class MainScene extends Phaser.Scene {
         keyPressed[code] = true;
 
         console.log(`Key code value: ${code}`);
-        if (keyPressed["Enter"] && this.isTeacherTalkActive()) {
+        if (keyPressed["Enter"] && this.isHelpDialogActive) {
             this.stepTeacherTalk();
             return;
         }
@@ -420,11 +410,11 @@ class MainScene extends Phaser.Scene {
 
         keyPressed[code] = true;
         console.log(`Key code value: ${code}`);
-        if (this.isTeacherTalkActive()) {
+        if (this.isHelpDialogActive) {
             this.stepTeacherTalk();
             return;
         }
-        if (this.firstPartTasksFinished) {
+        if (this.firstPartTasksFinished && !this.allTasksAreComplete) {
             const carPosX = activeCarSprite.body.position.x,
                 carPosY = activeCarSprite.body.position.y,
                 checkpointX = this.parkCheckpoint.x,
@@ -437,6 +427,10 @@ class MainScene extends Phaser.Scene {
                 (checkpointTopLeftY + 10 > carTopLeftPosY && carTopLeftPosY > checkpointTopLeftY)) {
                     console.warn("reached!!!");
                     this.tasksSecond.buttons[2].getElement("icon").setFillStyle(COLOR_LIGHT);
+                    this.tasksTracker[1][2] = true;
+                    if (this.isSecondPartTasksAreComplete()) {
+                        this.completeSecondPartTasks();
+                    };
             }
         }
         //if (keyPressed["Space"]) {
@@ -481,9 +475,13 @@ class MainScene extends Phaser.Scene {
     sitInACar(closestCar) {
         this.destroyPlayer();
         this.setupCar(closestCar);
-        if(this.firstPartTasksFinished) {
+        if(this.firstPartTasksFinished && !this.allTasksAreComplete) {
             this.tasksSecond.buttons[0].getElement("icon").setFillStyle(COLOR_LIGHT);
+            this.tasksTracker[1][0] = true;
             this.objectivesComplete.sitInACar = true;
+            if (this.isSecondPartTasksAreComplete()) {
+                this.completeSecondPartTasks();
+            };
         }
     }
 
@@ -504,8 +502,12 @@ class MainScene extends Phaser.Scene {
     leaveCar() {
         this.cars[this.activeCar].audio.startEngine.stop();
         this.activeCar = undefined;
-        if (this.firstPartTasksFinished) {
+        if (this.firstPartTasksFinished && !this.allTasksAreComplete) {
             this.tasksSecond.buttons[3].getElement("icon").setFillStyle(COLOR_LIGHT);
+            this.tasksTracker[1][3] = true;
+            if (this.isSecondPartTasksAreComplete()) {
+                this.completeSecondPartTasks();
+            };
         }
         document.removeEventListener('keydown', this.pressKeyActionCar);
         document.removeEventListener('keyup', this.removeKeyActionCar);
@@ -538,7 +540,6 @@ class MainScene extends Phaser.Scene {
     }
 
     checkActionDistance(x, y) {
-        const pipelineInstance = this.plugins.get('rexoutlinepipelineplugin');
         let minDistance;
         Object.keys(this.cars).forEach((carKey) => {
             let closestCar;
@@ -550,61 +551,78 @@ class MainScene extends Phaser.Scene {
             }
             if(closestCar && minDistance < 30) {
                 if(!car.active) {
-                    pipelineInstance.add(car, {thickness: 1});
+                    this.pipelineInstance.add(car, {thickness: 1});
                     car.active = true;
                 }
                 if(!this.firstPartTasksFinished) {
                     this.tasksFirst.buttons[4].getElement("icon").setFillStyle(COLOR_LIGHT);
-                    this.tasksFirstTracker[4] = true;
-                    this.isAllTasksAreComplete();
+                    this.tasksTracker[0][4] = true;
+                    if (this.isFirstPartTasksAreComplete()) {
+                        this.completeFirstPartTasks();
+                    };
                 }
             } else {
                 car.active = false;
-                pipelineInstance.remove(car);
+                this.pipelineInstance.remove(car);
             }
         });    
     }
 
     stepTeacherTalk() {
-        const pipelineInstance = this.plugins.get("rexoutlinepipelineplugin");
-        if (this.teacherTexts[0].active) {
-            this.teacherTexts[0].active = false;
-            this.teacherTexts[1].active = true;
-            this.helperText.start(this.teacherTexts[1].text, 50);
+        const activeTextIndex = this.getActiveTextIndex(),
+            activeText = this.helpTexts[activeTextIndex];
+        let nextText;
+        if (this.helpTexts[0].active) {
+            this.helpTexts[0].active = false;
+            this.helpTexts[1].active = true;
+            this.helperText.start(this.helpTexts[1].text, 50);
             this.helperText.childrenMap.icon.anims.restart(false, true);
-            this.pointer = this.add.polygon(50, 100, [this.player.x, this.player.y, this.player.x + 50, this.player.y + 200, this.player.x + 100, this.player.y + 200], COLOR_PRIMARY);
-            this.pointer.setStrokeStyle(2, COLOR_LIGHT);
-            this.pointer.originX = 0;
-            this.pointer.originY = 0;
-            this.pointer.setDepth(0);
-            pipelineInstance.add(this.player, {thickness: 1});
+            this.addCharacterPointer();
+        } else if (!activeText.last) {
+            nextText = this.helpTexts[activeTextIndex + 1];
+            activeText.active = false;
+            nextText.active = true;
+            this.helperText.start(nextText.text, 50);
+            this.helperText.childrenMap.icon.anims.restart(false, true);
         } else {
-            if(!this.firstPartTasksFinished || this.teacherTexts[3].active) {
-                this.teacherTexts[1].active = false;
-                this.teacherTexts[3].active = false;
-                this.helperText.hide();
-                this.pointer.destroy();
-                pipelineInstance.remove(this.player);
-                this.createHelpIcon();
-            } else {
-                this.teacherTexts[2].active = false;
-                this.teacherTexts[3].active = true;
-                this.helperText.start(this.teacherTexts[3].text, 50);
-                this.helperText.childrenMap.icon.anims.restart(false, true);
-            }
+            this.hideHelpDialog();
         }
+    }
+
+    openHelpDialog() {
+        const activeTextIndex = this.getActiveTextIndex();
+        this.helperText.show();
+        this.helperText.start(this.helpTexts[activeTextIndex].text, 50);
+        this.helperText.childrenMap.icon.anims.restart(false, true);
+        this.isHelpDialogActive = true;
+    }
+
+    hideHelpDialog() {
+        const activeTextIndex = this.getActiveTextIndex();
+        this.helpTexts[activeTextIndex].active = false;
+        this.isHelpDialogActive = false;
+        this.helperText.hide();
+        this.createHelpIcon();
+        if (this.pointer) {
+            this.pointer.destroy();
+            this.pipelineInstance.remove(this.player);
+        }
+    }
+
+    addCharacterPointer() {
+        this.pointer = this.add.polygon(50, 100, [this.player.x + 18, this.player.y, this.player.x + 50, this.player.y - 180, this.player.x + 150, this.player.y - 200], COLOR_PRIMARY);
+        this.pointer.setStrokeStyle(2, COLOR_LIGHT);
+        this.pointer.originX = 0;
+        this.pointer.originY = 0;
+        this.pointer.setDepth(0);
+        this.pipelineInstance.add(this.player, {thickness: 1});
     }
 
     userClick(e) {
-        if (this.isTeacherTalkActive()) {
+        if (this.isHelpDialogActive) {
             this.stepTeacherTalk();
             return;
         }
-    }
-
-    isTeacherTalkActive() {
-        console.log(this.teacherTexts.find(text => text.active === true));
-        return !!(this.teacherTexts.find(text => text.active === true));
     }
 
     createHelpIcon() {
@@ -644,11 +662,13 @@ class MainScene extends Phaser.Scene {
         this.helpIcon.on("button.click", (btn, i, pointer, event) => {
             if (!this.helperText.visible) {
                 if (!this.firstPartTasksFinished) {
-                    this.teacherTexts[0].active = true;
+                    this.helpTexts[0].active = true;
+                } else if (!this.allTasksAreComplete) {
+                    this.helpTexts[2].active = true;
                 } else {
-                    this.teacherTexts[2].active = true;
+                    this.helpTexts[4].active = true;
                 }
-                this.helperText.show();
+                this.openHelpDialog();
             }
         });
 
@@ -667,58 +687,111 @@ class MainScene extends Phaser.Scene {
         if(!this.firstPartTasksFinished) {
             if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
                 this.tasksFirst.buttons[0].getElement("icon").setFillStyle(COLOR_LIGHT);
-                this.tasksFirstTracker[0] = true; 
+                this.tasksTracker[0][0] = true; 
             }
             if (keyPressed["ArrowLeft"] || keyPressed["KeyA"]){
                 this.tasksFirst.buttons[2].getElement("icon").setFillStyle(COLOR_LIGHT);
-                this.tasksFirstTracker[2] = true;
+                this.tasksTracker[0][2] = true;
             }
             if (keyPressed["ArrowRight"] || keyPressed["KeyD"]){
                 this.tasksFirst.buttons[3].getElement("icon").setFillStyle(COLOR_LIGHT);
-                this.tasksFirstTracker[3] = true;
+                this.tasksTracker[0][3] = true;
             }
             if (keyPressed["ArrowDown"] || keyPressed["KeyS"]){
                 this.tasksFirst.buttons[1].getElement("icon").setFillStyle(COLOR_LIGHT);
-                this.tasksFirstTracker[1] = true;
+                this.tasksTracker[0][1] = true;
             }
-            this.isAllTasksAreComplete();
-        } else {
-
+            if (this.isFirstPartTasksAreComplete()) {
+                this.completeFirstPartTasks();
+            };
         }
     }
 
-    isAllTasksAreComplete() {
-        console.log("is all tasks are complete?");
-        if(!this.firstPartTasksFinished) {
-            if( this.tasksFirstTracker[0] && this.tasksFirstTracker[1] && this.tasksFirstTracker[2] && this.tasksFirstTracker[3] && this.tasksFirstTracker[4]) {
-                this.firstPartTasksFinished = true; 
-                this.tasksFirst.destroy();
-                this.helperText.show();
-                this.helperText.childrenMap.icon.anims.restart(false, true);
-                this.helperText.start(this.teacherTexts[2].text, 50);
-                this.teacherTexts[2].active = true;
-                this.tasksSecond = this.rexUI.add.fixWidthButtons({
-                    x: 640,
-                    y: 480,
-                    buttons: [
-                        this.createCheckBox("Sit in a car (e, Enter)"),
-                        this.createCheckBox("Drive around red building in the center"),
-                        this.createCheckBox("Park car near orange track on the parking"),
-                        this.createCheckBox("Leave the car (e, Enter)")
-                        // ...
-                    ],
-                    // rtl: false,
-                    align: 0,
-                    click: {
-                        mode: 'pointerup',
-                        clickInterval: 100
-                    },
-                    space: {
-                        line: 3,
-                    }
-                }).layout();
+    isFirstPartTasksAreComplete() {
+        if (!this.firstPartTasksFinished) {
+            if (this.tasksTracker[0][0] && this.tasksTracker[0][1] && this.tasksTracker[0][2] && this.tasksTracker[0][3] && this.tasksTracker[0][4]) {
+                return true;
+            } else {
+                return false;
             }
+        } else {
+            return true;
         }
+    }
+
+    isSecondPartTasksAreComplete() {
+        if (this.tasksTracker[1][0] && this.tasksTracker[1][1] && this.tasksTracker[1][2] && this.tasksTracker[1][3]) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    completeFirstPartTasks() {
+        this.firstPartTasksFinished = true; 
+        this.tasksFirst.destroy();
+        this.helpTexts[2].active = true;
+        this.openHelpDialog();
+        this.tasksSecond = this.rexUI.add.fixWidthButtons({
+            x: 640,
+            y: 480,
+            buttons: [
+                this.createCheckBox("Sit in a car (e, Enter)"),
+                this.createCheckBox("Drive around red building in the center"),
+                this.createCheckBox("Park car near orange track on the parking"),
+                this.createCheckBox("Leave the car (e, Enter)")
+                // ...
+            ],
+            // rtl: false,
+            align: 0,
+            click: {
+                mode: 'pointerup',
+                clickInterval: 100
+            },
+            space: {
+                line: 3,
+            }
+        }).layout();
+    }
+
+    completeSecondPartTasks() {
+        this.allTasksAreComplete = true;
+        this.helpTexts[4].active = true;
+        this.openHelpDialog();
+        this.tasksSecond.destroy();
+    }
+
+    checkCheckpoints(bodyBName, bodyAType) {
+        if (bodyBName === "checkpoint1" && bodyAType === "car") {
+            this.checkpointsReached[0] = true; 
+        } else if (bodyBName === "checkpoint1" && bodyAType !== "car") {
+            console.warn("please get in the car!!!");
+        }
+        if (bodyBName === "checkpoint2" && bodyAType === "car") {
+            this.checkpointsReached[1] = true;
+        } else if (bodyBName === "checkpoint2" && bodyAType !== "car") {
+            console.warn("please get in the car!!!");
+        }
+        if (bodyBName === "checkpoint3" && bodyAType === "car") {
+            this.checkpointsReached[2] = true;
+        } else if (bodyBName === "checkpoint3" && bodyAType !== "car") {
+            console.warn("please get in the car!!!");
+        }
+        if (this.firstPartTasksFinished && !this.allTasksAreComplete && this.isAllCheckpointsReached()) {
+            this.tasksSecond.buttons[1].getElement("icon").setFillStyle(COLOR_LIGHT);
+            this.tasksTracker[1][1] = true;
+            if (this.isSecondPartTasksAreComplete()) {
+                this.completeSecondPartTasks();
+            };
+        }
+    }
+
+    getActiveTextIndex() {
+        return this.helpTexts.findIndex(item => item.active === true);
+    }
+
+    isAllCheckpointsReached() {
+        return this.checkpointsReached.filter(item => item === true).length === 3;
     }
 }
 
