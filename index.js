@@ -17,6 +17,8 @@ class MainScene extends Phaser.Scene {
         this.activeCar;
         this.cars = {};
         this.objectivesComplete = { sitInACar: false, driveAround: false, leaveCar: false };
+        this.startGameTitle;
+        this.startGameHelper;
         this.load.image({
             key: 'tiles',
             url: 'images/sity-2d/Tilemap/tilemap_packed.png',
@@ -40,31 +42,32 @@ class MainScene extends Phaser.Scene {
                 "active": true,
                 "last": false,
                 "text": [ 
-                    "Hello student! My name is Monica, i'll be you teacher today! Press Enter key, or click to continue..."
+                    "Hello student! My name is Monica, i'll be you teacher today! Press Enter key to continue..."
                 ]
             },
             {
                 "active": false,
                 "last": true,
-                "text": "This is your character. To move use w,a,d,s, or arrow buttons on your keyboard.\nComplete objectives on the right to finish the exercise. Press Enter key, or click to continue..."
+                "text": "This is your character. To move use w,a,d,s, or arrow buttons on your keyboard.\nComplete objectives on the right to finish the exercise. Press Enter key to continue..."
             },
             {
                 "active": false,
                 "last": false,
-                "text": "Well done! When you come closer, the car become highlighted, this means you can interact with it. Press 'e' or 'Enter' to start interaction. Press Enter key, or click to continue..."
+                "text": "Well done! When you come closer, the car become highlighted, this means you can interact with it. Press 'e' or 'Enter' to start interaction. Press Enter key to continue..."
             },
             {
                 "active": false,
                 "last": true,
-                "text": "Next tasks will be with driving the car. While you will be inside the car push 'w' or ↑ to gear up, 's' or ↓ to break, or move backward. While you're moving press 'a' or ← to turn left, 'd' or → to turn right. Press Enter key, or click to continue..."
+                "text": "Next tasks will be with driving the car. While you will be inside the car push 'w' or ↑ to gear up, 's' or ↓ to break, or move backward. While you're moving press 'a' or ← to turn left, 'd' or → to turn right. Press Enter key to continue..."
             },
             {
                 "active": false,
                 "last": true,
-                "text": "Congratulation's you finished all the tasks! Exam is passed. Press Enter key, or click to continue..."
+                "text": "Congratulation's you finished all the tasks! Exam is passed. Press Enter key to continue..."
             }
         ];
 
+        this.gameStarted = false;
         this.firstPartTasksFinished = false;
         this.allTasksAreComplete = false;
         this.isHelpDialogActive = true;
@@ -131,8 +134,11 @@ class MainScene extends Phaser.Scene {
         //dudes.push(this.add.existing(new Dude(this, 240, 290, 'walk', 'west', 10)));
         //dudes.push(this.add.existing(new Dude(this, 100, 380, 'walk', 'northWest', 20)));
         //dudes.push(this.add.existing(new Dude(this, 620, 140, 'walk', 'south', 30)));
-        this.buildMap();
-        cursors = this.input.keyboard.createCursorKeys(); 
+        if (this.gameStarted) {
+            this.buildMap();
+        } else {
+            this.renderBanner();
+        }
     }
 
     update() {
@@ -169,8 +175,10 @@ class MainScene extends Phaser.Scene {
 
         }
     }
+
     buildMap () {
         //buildings = scene.physics.add.staticGroup();
+        cursors = this.input.keyboard.createCursorKeys(); 
         //  Parse the data out of the map
         const map = this.make.tilemap({ key: 'map'});
     
@@ -191,6 +199,7 @@ class MainScene extends Phaser.Scene {
 
         housesLayer.setCollisionByProperty({ collides: true });
         this.matter.world.convertTilemapLayer(housesLayer);
+        //this.matter.world.convertTilemapLayer(riverLayer);
 
         this.cars["car"] = this.createCar(248, 500, 0, 0.9, 100, 'car');
 
@@ -201,9 +210,6 @@ class MainScene extends Phaser.Scene {
         housesLayer.setCollisionByProperty({ collides: true });
         this.matter.world.setBounds(0, 0, background.width, background.height);
         
-        //this.matter.add.collider(this.player, housesLayer);
-        //this.matter.add.collider(this.player, riverLayer);
-        //this.matter.add.collider(this.player, this.cars);
     
         this.createPlayer(200, 450);
 
@@ -245,8 +251,6 @@ class MainScene extends Phaser.Scene {
             }
         });
         this.helperText.setDepth(1);
-
-        //this.helperText.start("To move your character use w,a,d,s, or arrow buttons on your keyboard.\nTo take an action press e key, or Enter", 100);
 
         this.tasksFirst = this.rexUI.add.fixWidthButtons({
             x: 640,
@@ -290,13 +294,50 @@ class MainScene extends Phaser.Scene {
 
         this.checkpointsReached = [];
 
-        document.addEventListener('click', e => this.userClick(e));
+        //document.addEventListener('click', e => this.userClick(e));
         this.matter.world.on("collisionstart", (event, bodyA, bodyB) => {
-            const bodyBName = bodyB ? bodyB.gameObject.getData("name") : "wall",
+            const bodyBName = bodyB && bodyB.gameObject ? bodyB.gameObject.getData("name") : "wall",
                 bodyAType = bodyA.gameObject.texture && bodyA.gameObject.texture.key;
         
-            this.checkCheckpoints(bodyBName, bodyAType)
+            if (bodyA.gameObject.tile && bodyA.gameObject.tile.layer.name === "river") {
+                console.warn("custom event for sink in a river");
+                event.preventDefault();
+            } else {
+                this.checkCheckpoints(bodyBName, bodyAType);
+            }
         });
+    }
+
+    startGame() {
+        console.warn('staring the game');
+        document.removeEventListener('keydown', this.startGame);
+        this.gameStarted = true;
+        this.startGameTitle.destroy();
+        this.startGameHelper.destroy();
+        this.buildMap();
+    }
+
+    renderBanner() {
+        this.startGame = this.startGame.bind(this);
+        this.startGameTitle = this.add.text(350, 260, "Start", {
+            fontSize: 44,
+        });
+        this.startGameHelper = this.add.text(310, 310, "Press Enter, or click", {
+            fontSize:18
+        });
+        this.startGameTitle.setInteractive();
+
+        this.startGameTitle.on("pointerdown", this.startGame);
+
+        this.startGameTitle.on("pointerover", (btn, i, pointer, event) => {
+            document.body.style.cursor = "pointer";    
+        });
+
+        this.startGameTitle.on("pointerout", (btn, i, pointer, event) => {
+            document.body.style.cursor = "auto";
+        });
+
+        document.addEventListener('keydown', this.startGame);
     }
 
     createCheckBox(text) {
