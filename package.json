@@ -1,10 +1,10 @@
 {
   "name": "phaser-game",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "./node_modules/.bin/autoreload-server -w '**/**.{html,css,js}' -r '**/**.{html,css,js}' ./",
+    "start": "./node_modules/.bin/autoreload-server -w '**/**.{html,css,js}' -r '**/**.{html,css,js}' ./ 8008",
     "update": "node ./build.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

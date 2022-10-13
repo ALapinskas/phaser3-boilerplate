@@ -3,7 +3,8 @@ var map, buildings, river;
 var scoreText;
 var dudes = [];
 var cursors;
-var maxCarSpeed = 1;
+var maxCarSpeed = 0.5;
+var maxCarBackwardSpeed = -0.1;
 const COLOR_PRIMARY = 0x4e342e;
 const COLOR_LIGHT = 0x7b5e57;
 const COLOR_DARK = 0x260e04;
@@ -36,6 +37,10 @@ class MainScene extends Phaser.Scene {
 
         this.load.audio('startEngine1', './assets/engine_start.mp3');
         this.load.audio('carRearMove', './assets/car_rearmove.mp3');
+        this.load.audio('carCrash', './assets/car_crash.mp3');
+        this.load.audio('engineWork', '/assets/engine_work.mp3');
+        this.load.audio('engineWork2', '/assets/engine_work2.mp3');
+        this.load.audio('engineUp', '/assets/engine_up.mp3');
 
         this.helpTexts = [
             {
@@ -142,37 +147,59 @@ class MainScene extends Phaser.Scene {
     }
 
     update() {
-        console.log("update");
         if(this.activeCar) {
             let keyPressed = this.keyPressed,
                 activeCarSprite = this.cars[this.activeCar],
                 currentAngle = activeCarSprite.angle;
+            console.log("update car speed: ", activeCarSprite.speed);    
             if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
                 if(activeCarSprite.speed < maxCarSpeed) {
-                    activeCarSprite.speed += 0.005;
+                    activeCarSprite.speed += 0.004;
                 }
-                activeCarSprite.thrustLeft(activeCarSprite.speed);
+                if (!activeCarSprite.audio.engineUp.isPlaying)
+                    activeCarSprite.audio.engineUp.play();
+            } else {
+                if (activeCarSprite.audio.engineUp.isPlaying)
+                    activeCarSprite.audio.engineUp.stop();
             }
             
             if (keyPressed["ArrowDown"] || keyPressed["KeyS"]){
-                activeCarSprite.thrustRight(0.3);
+                if (activeCarSprite.speed > maxCarBackwardSpeed) {
+                    activeCarSprite.speed -= 0.01;
+                }
             }
 
-            if ((keyPressed["ArrowUp"] || keyPressed["KeyW"]) && (keyPressed["ArrowLeft"] || keyPressed["KeyA"])) {
-                activeCarSprite.setAngle(currentAngle - 3);
+            if (!(keyPressed["ArrowUp"] || keyPressed["KeyW"]) && !(keyPressed["ArrowDown"] || keyPressed["KeyS"])) {
+                if (activeCarSprite.speed > 0) {
+                    activeCarSprite.speed -= 0.002;
+                } else if (activeCarSprite.speed < 0) {
+                    activeCarSprite.speed += 0.001;
+                }
             }
-            if ((keyPressed["ArrowUp"] || keyPressed["KeyW"]) && (keyPressed["ArrowRight"] || keyPressed["KeyD"])) {
-                activeCarSprite.setAngle(currentAngle + 3);
-            }
-            if ((keyPressed["ArrowDown"] || keyPressed["KeyS"]) && (keyPressed["ArrowLeft"] || keyPressed["KeyA"])) {
-                activeCarSprite.setAngle(currentAngle + 3);
-            }
-            if ((keyPressed["ArrowDown"] || keyPressed["KeyS"]) && (keyPressed["ArrowRight"] || keyPressed["KeyD"])) {
-                activeCarSprite.setAngle(currentAngle - 3);
-            }
-        }
-        if (this.player && this.player.active) {
+            activeCarSprite.speed = activeCarSprite.speed ? parseFloat(activeCarSprite.speed.toFixed(3)) : 0;
 
+            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowLeft"] || keyPressed["KeyA"])) {
+                activeCarSprite.setAngle(currentAngle + 3);
+            }
+            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowRight"] || keyPressed["KeyD"])) {
+                activeCarSprite.setAngle(currentAngle - 3);
+            }
+            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowLeft"] || keyPressed["KeyA"])) {
+                
+                activeCarSprite.setAngle(currentAngle - 3);
+            }
+            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowRight"] || keyPressed["KeyD"])) {
+                activeCarSprite.setAngle(currentAngle + 3);
+            }
+
+            if (activeCarSprite.speed >= 0) {
+                activeCarSprite.thrustLeft(activeCarSprite.speed);
+                activeCarSprite.audio.rearMoveAudio.stop();
+            } else if (activeCarSprite.speed < 0) {
+                activeCarSprite.thrustLeft(activeCarSprite.speed);
+                if(!activeCarSprite.audio.rearMoveAudio.isPlaying)
+                    activeCarSprite.audio.rearMoveAudio.play();
+            }
         }
     }
 
@@ -189,27 +216,35 @@ class MainScene extends Phaser.Scene {
         var background = map.createLayer('background', tileset);
     
         var housesLayer = map.createLayer('houses', tileset);
-        //this.cars = map.createLayer('cars', tileset);
+        
         map.createLayer('decorations', tileset); 
         map.createLayer('decorations2', tileset);
         var riverLayer = map.createLayer('river', tileset);
     
         housesLayer.setCollisionByExclusion([-1]);
+        //housesLayer.setCollisionByProperty({ collides: true }); //doesn't works for some reasons
+        //riverLayer.setCollisionByProperty({ collides: true }); //doesn't works for some reasons
         riverLayer.setCollisionByExclusion([-1]);
 
-        housesLayer.setCollisionByProperty({ collides: true });
         this.matter.world.convertTilemapLayer(housesLayer);
-        //this.matter.world.convertTilemapLayer(riverLayer);
+        this.matter.world.convertTilemapLayer(riverLayer);
+        //this.player.setCollideWorldBounds(true);
+        this.matter.world.setBounds(0, 0, background.width, background.height);
+        this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+
+        riverLayer.forEachTile(function (tile) {
+            if (tile.physics.matterBody) {
+                tile.physics.matterBody.body.parts.forEach((part) => {
+                    part.isSensor = true;
+                });
+            }
+        });
 
         this.cars["car"] = this.createCar(248, 500, 0, 0.9, 100, 'car');
 
         this.cars["car2"] = this.createCar(680, 93, 90, 1.2, 500, 'car2');
         
         this.pipelineInstance = this.plugins.get('rexoutlinepipelineplugin');
-        //this.player.setCollideWorldBounds(true);
-        housesLayer.setCollisionByProperty({ collides: true });
-        this.matter.world.setBounds(0, 0, background.width, background.height);
-        
     
         this.createPlayer(200, 450);
 
@@ -297,11 +332,23 @@ class MainScene extends Phaser.Scene {
         //document.addEventListener('click', e => this.userClick(e));
         this.matter.world.on("collisionstart", (event, bodyA, bodyB) => {
             const bodyBName = bodyB && bodyB.gameObject ? bodyB.gameObject.getData("name") : "wall",
-                bodyAType = bodyA.gameObject.texture && bodyA.gameObject.texture.key;
+                bodyAType = bodyA.gameObject.texture && bodyA.gameObject.texture.key,
+                bodyALayerName = bodyA.gameObject.tile && bodyA.gameObject.tile.layer.name,
+                bodyBCar = bodyB.gameObject && bodyB.gameObject.texture && (bodyB.gameObject.texture.key === "car" || bodyB.gameObject.texture.key === "car2"),
+                bodyBType = bodyB.gameObject && bodyB.gameObject.texture && bodyB.gameObject.texture.key,
+                bodyACar = bodyAType && (bodyAType === "car" || bodyAType === "car2");
         
-            if (bodyA.gameObject.tile && bodyA.gameObject.tile.layer.name === "river") {
+            if (bodyALayerName === "river") {
                 console.warn("custom event for sink in a river");
-                event.preventDefault();
+                return false;
+            } else if ((bodyALayerName === "houses" || bodyACar) && bodyBCar && this.activeCar) {
+                this.cars[this.activeCar].speed = 0;
+                this.cars[this.activeCar].audio.engineUp.stop();
+                if (!this.cars[this.activeCar].audio.carCrash.isPlaying)
+                    this.cars[this.activeCar].audio.carCrash.play();
+            } else if (bodyBType && bodyBType === "dudes" && bodyACar){
+                console.warn("dude reached car");
+                return false;
             } else {
                 this.checkCheckpoints(bodyBName, bodyAType);
             }
@@ -395,6 +442,9 @@ class MainScene extends Phaser.Scene {
         //if (keyPressed["Space"]) {
         //    this.startFireAction();
         //}
+        if (this.player.angle !== 0) {
+            this.player.setAngle(0);
+        }
         if (keyPressed["Enter"] || keyPressed["KeyE"]) {
             let minDistance, closestCar;
             Object.keys(this.cars).forEach((carKey) => {
@@ -508,9 +558,6 @@ class MainScene extends Phaser.Scene {
             //this.car.setVelocityY(0);
         }
         keyPressed[code] = false;
-        if (keyPressed["KeyW"] === false) {
-            this.cars[this.activeCar].speed = 0;
-        }
     }
 
     sitInACar(closestCar) {
@@ -535,6 +582,7 @@ class MainScene extends Phaser.Scene {
 
     setupCar(closestCar) {
         this.cars[closestCar].audio.startEngine.play();
+        this.cars[closestCar].audio.engineWork.play();
         this.activeCar = closestCar;
         document.addEventListener('keydown', this.pressKeyActionCar);
         document.addEventListener('keyup', this.removeKeyActionCar);
@@ -542,6 +590,7 @@ class MainScene extends Phaser.Scene {
 
     leaveCar() {
         this.cars[this.activeCar].audio.startEngine.stop();
+        this.cars[this.activeCar].audio.engineWork.stop();
         this.activeCar = undefined;
         if (this.firstPartTasksFinished && !this.allTasksAreComplete) {
             this.tasksSecond.buttons[3].getElement("icon").setFillStyle(COLOR_LIGHT);
@@ -575,7 +624,12 @@ class MainScene extends Phaser.Scene {
         car.setDepth(1);
         car.audio = { 
             startEngine: this.sound.add("startEngine1"),
-            rearMoveAudio: this.sound.add("carRearMove") }
+            engineWork: this.sound.add("engineWork"),
+            engineWork2: this.sound.add("engineWork2"),
+            engineUp: this.sound.add("engineUp"),
+            rearMoveAudio: this.sound.add("carRearMove"),
+            carCrash: this.sound.add("carCrash") 
+        }
 
         return car;
     }
