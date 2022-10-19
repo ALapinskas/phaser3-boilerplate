@@ -3,7 +3,7 @@ var map, buildings, river;
 var scoreText;
 var dudes = [];
 var cursors;
-var maxCarSpeed = 0.5;
+var maxCarSpeed = 0.2;
 var maxCarBackwardSpeed = -0.1;
 const COLOR_PRIMARY = 0x4e342e;
 const COLOR_LIGHT = 0x7b5e57;
@@ -28,8 +28,9 @@ class MainScene extends Phaser.Scene {
         this.load.spritesheet('dudes', 'images/sity-2d/Tilemap/dudes.png', { frameWidth: 16, frameHeight: 16 });
         this.load.image('car', 'images/racingpack/PNG/Cars/car_black_1.png');
         this.load.image('car2', 'images/racingpack/PNG/Cars/car_red_4.png');
+        this.load.image('check', 'images/check.svg');
         //this.load.spritesheet('teacher', 'images/teacher_sprite_cut.jpg', { frameWidth: 82, frameHeight: 32 });
-        this.load.spritesheet('teacher', 'images/teacher_sprite.png', { frameWidth: 342, frameHeight: 522 });
+        this.load.spritesheet('teacher', 'images/teacher_sprite.png', { frameWidth: 342, frameHeight: 523 });
 
         this.load.plugin('rexoutlinepipelineplugin', './node_modules/phaser3-rex-plugins/dist/rexoutlinepipelineplugin.min.js', true);
 
@@ -41,6 +42,7 @@ class MainScene extends Phaser.Scene {
         this.load.audio('engineWork', '/assets/engine_work.mp3');
         this.load.audio('engineWork2', '/assets/engine_work2.mp3');
         this.load.audio('engineUp', '/assets/engine_up.mp3');
+        this.load.audio('fallIntoWater', '/assets/large-falls-into-water.mp3');
 
         this.helpTexts = [
             {
@@ -63,7 +65,7 @@ class MainScene extends Phaser.Scene {
             {
                 "active": false,
                 "last": true,
-                "text": "Next tasks will be with driving the car. While you will be inside the car push 'w' or ↑ to gear up, 's' or ↓ to break, or move backward. While you're moving press 'a' or ← to turn left, 'd' or → to turn right. Press Enter key to continue..."
+                "text": "Next tasks will be with driving the car. While you will be inside the car push 'w', or '↑' to gear up, 's', or '↓' to break, or move backward. While you're moving press 'a' or '←' to turn left, 'd' or '→' to turn right. Press Enter key to continue..."
             },
             {
                 "active": false,
@@ -72,7 +74,10 @@ class MainScene extends Phaser.Scene {
             }
         ];
 
+        this.gameOverText = "Oh no!!! You sinked. Now you will have to start from the beginning!";
+
         this.gameStarted = false;
+        this.gameOvered = false;
         this.firstPartTasksFinished = false;
         this.allTasksAreComplete = false;
         this.isHelpDialogActive = true;
@@ -90,6 +95,12 @@ class MainScene extends Phaser.Scene {
             frameRate: 6,
             repeat:15
         });
+        this.anims.create({
+            key: 'teacher_disappointed',
+            frames: this.anims.generateFrameNumbers('teacher', {start: 0, end: 0, frames:[5,7]}),
+            frameRate: 1,
+            repeat:0
+        });
 
         this.anims.create({
             key: 'left',
@@ -97,21 +108,18 @@ class MainScene extends Phaser.Scene {
             frameRate: 8,
             repeat: -1
         });
-    
         this.anims.create({
             key: 'down',
             frames: this.anims.generateFrameNumbers('dudes', {start: 0, end: 1, frames:[5,9]}),
             frameRate: 8,
             repeat:-1
         });
-    
         this.anims.create({
             key: 'right',
             frames: this.anims.generateFrameNumbers('dudes', {start: 0, end: 1, frames:[7,11]}),
             frameRate: 8,
             repeat: -1
         });
-    
         this.anims.create({
             key: 'up',
             frames: this.anims.generateFrameNumbers('dudes', {start: 0, end: 1, frames:[6,10]}),
@@ -123,7 +131,6 @@ class MainScene extends Phaser.Scene {
             key: 'standLeft',
             frames: [ { key: 'dudes', frame: 0 } ]
         });
-    
         this.anims.create({
             key: 'standDown',
             frames: [ { key: 'dudes', frame: 1 } ]
@@ -146,63 +153,6 @@ class MainScene extends Phaser.Scene {
         }
     }
 
-    update() {
-        if(this.activeCar) {
-            let keyPressed = this.keyPressed,
-                activeCarSprite = this.cars[this.activeCar],
-                currentAngle = activeCarSprite.angle;
-            console.log("update car speed: ", activeCarSprite.speed);    
-            if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
-                if(activeCarSprite.speed < maxCarSpeed) {
-                    activeCarSprite.speed += 0.004;
-                }
-                if (!activeCarSprite.audio.engineUp.isPlaying)
-                    activeCarSprite.audio.engineUp.play();
-            } else {
-                if (activeCarSprite.audio.engineUp.isPlaying)
-                    activeCarSprite.audio.engineUp.stop();
-            }
-            
-            if (keyPressed["ArrowDown"] || keyPressed["KeyS"]){
-                if (activeCarSprite.speed > maxCarBackwardSpeed) {
-                    activeCarSprite.speed -= 0.01;
-                }
-            }
-
-            if (!(keyPressed["ArrowUp"] || keyPressed["KeyW"]) && !(keyPressed["ArrowDown"] || keyPressed["KeyS"])) {
-                if (activeCarSprite.speed > 0) {
-                    activeCarSprite.speed -= 0.002;
-                } else if (activeCarSprite.speed < 0) {
-                    activeCarSprite.speed += 0.001;
-                }
-            }
-            activeCarSprite.speed = activeCarSprite.speed ? parseFloat(activeCarSprite.speed.toFixed(3)) : 0;
-
-            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowLeft"] || keyPressed["KeyA"])) {
-                activeCarSprite.setAngle(currentAngle + 3);
-            }
-            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowRight"] || keyPressed["KeyD"])) {
-                activeCarSprite.setAngle(currentAngle - 3);
-            }
-            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowLeft"] || keyPressed["KeyA"])) {
-                
-                activeCarSprite.setAngle(currentAngle - 3);
-            }
-            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowRight"] || keyPressed["KeyD"])) {
-                activeCarSprite.setAngle(currentAngle + 3);
-            }
-
-            if (activeCarSprite.speed >= 0) {
-                activeCarSprite.thrustLeft(activeCarSprite.speed);
-                activeCarSprite.audio.rearMoveAudio.stop();
-            } else if (activeCarSprite.speed < 0) {
-                activeCarSprite.thrustLeft(activeCarSprite.speed);
-                if(!activeCarSprite.audio.rearMoveAudio.isPlaying)
-                    activeCarSprite.audio.rearMoveAudio.play();
-            }
-        }
-    }
-
     buildMap () {
         //buildings = scene.physics.add.staticGroup();
         cursors = this.input.keyboard.createCursorKeys(); 
@@ -220,7 +170,16 @@ class MainScene extends Phaser.Scene {
         map.createLayer('decorations', tileset); 
         map.createLayer('decorations2', tileset);
         var riverLayer = map.createLayer('river', tileset);
+
+        this.riverLayerDimensions = {
+            minWidth: null,
+            minHeight: null,
+            maxWidth: 0,
+            maxHeight: 0
+        };
     
+        this.riverArea = this.add.rectangle(680, 120, 50, 30, COLOR_LIGHT, 0.6);
+
         housesLayer.setCollisionByExclusion([-1]);
         //housesLayer.setCollisionByProperty({ collides: true }); //doesn't works for some reasons
         //riverLayer.setCollisionByProperty({ collides: true }); //doesn't works for some reasons
@@ -232,16 +191,36 @@ class MainScene extends Phaser.Scene {
         this.matter.world.setBounds(0, 0, background.width, background.height);
         this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-        riverLayer.forEachTile(function (tile) {
+        riverLayer.forEachTile((tile) => {
             if (tile.physics.matterBody) {
                 tile.physics.matterBody.body.parts.forEach((part) => {
                     part.isSensor = true;
                 });
+                if (tile.pixelX > this.riverLayerDimensions.maxWidth) {
+                    this.riverLayerDimensions.maxWidth = tile.pixelX;
+                }
+                if (tile.pixelY > this.riverLayerDimensions.maxHeight) {
+                    this.riverLayerDimensions.maxHeight = tile.pixelY;
+                }
+                if (this.riverLayerDimensions.minWidth === null || tile.pixelX < this.riverLayerDimensions.minWidth) {
+                    this.riverLayerDimensions.minWidth = tile.pixelX;
+                }
+                if (this.riverLayerDimensions.minHeight === null || tile.pixelY < this.riverLayerDimensions.minHeight) {
+                    this.riverLayerDimensions.minHeight = tile.pixelY;
+                }
             }
         });
 
-        this.cars["car"] = this.createCar(248, 500, 0, 0.9, 100, 'car');
+        this.riverLayerDimensions.maxWidth += riverLayer.tilemap.tileWidth;
+        this.riverLayerDimensions.maxHeight += riverLayer.tilemap.tileHeight;
 
+        this.parkCheckpoint = this.add.rectangle(680, 120, 50, 30, COLOR_LIGHT, 0.6);
+        const parkCheck = this.matter.add.gameObject(this.parkCheckpoint, {isSensor:true});
+        parkCheck.setData("name", "parkCheckpoint");
+        parkCheck.setDepth(0);
+
+        this.cars["car"] = this.createCar(248, 500, 0, 0.9, 100, 'car');
+        //this.cars["car"] = this.createCar(520, 220, 0, 0.9, 100, 'car');
         this.cars["car2"] = this.createCar(680, 93, 90, 1.2, 500, 'car2');
         
         this.pipelineInstance = this.plugins.get('rexoutlinepipelineplugin');
@@ -285,8 +264,45 @@ class MainScene extends Phaser.Scene {
                 text: 0,
             }
         });
-        this.helperText.setDepth(1);
+        this.helperText.setDepth(3);
 
+        /*
+        this.tasksTitle = this.rexUI.add.label({
+            x: 580,
+            y: 340,
+            // anchor: undefined,
+            // width: undefined,
+            // height: undefined,
+        
+            orientation: 0,
+            // rtl: false,
+        
+            iconMask: false,
+            text: this.add.text(0, 0, "Objectives:", {
+                fontSize: 24,
+            }),
+            expandTextWidth: false,
+            expandTextHeight: false,
+            actionMask: false,
+        
+            align: undefined,
+        
+            space: {
+                left: 0,
+                right: 0,
+                top: 0,
+                bottom: 0,
+        
+                icon: 0,
+                text: 0,
+            },
+        
+            // name: '',
+            // draggable: false,
+            // sizerEvents: false,
+            // enableLayer: false,
+        }).layout();
+        */
         this.tasksFirst = this.rexUI.add.fixWidthButtons({
             x: 640,
             y: 480,
@@ -308,13 +324,13 @@ class MainScene extends Phaser.Scene {
                 line: 3,
             }
         }).layout();
-
-        this.helperText.start(this.helpTexts[0].text, 50);
+        this.helperText.hide();
+        this.openHelpDialog();
+        //this.helperText.start(this.helpTexts[0].text, 50);
         
         this.checkpoint1 = this.add.rectangle(230, 250, 120, 10);
         this.checkpoint2 = this.add.rectangle(380, 370, 10, 100);
         this.checkpoint3 = this.add.rectangle(470, 250, 80, 10);
-        this.parkCheckpoint = this.add.rectangle(680, 120, 50, 30, COLOR_LIGHT, 0.6);
 
         const firstCheck = this.matter.add.gameObject(this.checkpoint1, {isSensor:true});
         firstCheck.setData("name", "checkpoint1");
@@ -323,35 +339,165 @@ class MainScene extends Phaser.Scene {
         const thirdCheck = this.matter.add.gameObject(this.checkpoint3, {isSensor:true});
         thirdCheck.setData("name", "checkpoint3");
 
-        const parkCheck = this.matter.add.gameObject(this.parkCheckpoint, {isSensor:true});
-        parkCheck.setData("name", "parkCheckpoint");
-        parkCheck.setDepth(0);
-
         this.checkpointsReached = [];
 
-        //document.addEventListener('click', e => this.userClick(e));
         this.matter.world.on("collisionstart", (event, bodyA, bodyB) => {
-            const bodyBName = bodyB && bodyB.gameObject ? bodyB.gameObject.getData("name") : "wall",
-                bodyAType = bodyA.gameObject.texture && bodyA.gameObject.texture.key,
-                bodyALayerName = bodyA.gameObject.tile && bodyA.gameObject.tile.layer.name,
-                bodyBCar = bodyB.gameObject && bodyB.gameObject.texture && (bodyB.gameObject.texture.key === "car" || bodyB.gameObject.texture.key === "car2"),
-                bodyBType = bodyB.gameObject && bodyB.gameObject.texture && bodyB.gameObject.texture.key,
-                bodyACar = bodyAType && (bodyAType === "car" || bodyAType === "car2");
+            try {
+                const bodyBName = bodyB && bodyB.gameObject ? bodyB.gameObject.getData("name") : "wall",
+                    bodyAType = bodyA.gameObject && bodyA.gameObject.texture && bodyA.gameObject.texture.key,
+                    bodyALayerName = bodyA.gameObject && bodyA.gameObject.tile && bodyA.gameObject.tile.layer.name,
+                    bodyBCar = bodyB.gameObject && bodyB.gameObject.texture && (bodyB.gameObject.texture.key === "car" || bodyB.gameObject.texture.key === "car2"),
+                    bodyBType = bodyB.gameObject && bodyB.gameObject.texture && bodyB.gameObject.texture.key,
+                    bodyACar = bodyAType && (bodyAType === "car" || bodyAType === "car2");
         
-            if (bodyALayerName === "river") {
-                console.warn("custom event for sink in a river");
-                return false;
-            } else if ((bodyALayerName === "houses" || bodyACar) && bodyBCar && this.activeCar) {
-                this.cars[this.activeCar].speed = 0;
-                this.cars[this.activeCar].audio.engineUp.stop();
-                if (!this.cars[this.activeCar].audio.carCrash.isPlaying)
-                    this.cars[this.activeCar].audio.carCrash.play();
-            } else if (bodyBType && bodyBType === "dudes" && bodyACar){
-                console.warn("dude reached car");
-                return false;
-            } else {
-                this.checkCheckpoints(bodyBName, bodyAType);
+                if (bodyALayerName === "river" && bodyBCar) {
+                    //console.log("depth: ", event.pairs[0].collision.depth);
+                    //console.log("depth: ", event.pairs[0].collision);
+                    const riverMinX = this.riverLayerDimensions.minWidth,
+                        riverMinY = this.riverLayerDimensions.minHeight,
+                        riverMaxX = this.riverLayerDimensions.maxWidth,
+                        riverMaxY = this.riverLayerDimensions.maxHeight,
+                        carPosX = bodyB.position.x,
+                        carPosY = bodyB.position.y,
+                        isCarDirectionForward = this.cars[this.activeCar].speed >= 0;
+                    console.warn("be carful!");
+                    const sinkWidth = 5;
+                    if ((riverMinX - sinkWidth) < carPosX && (riverMaxX + sinkWidth) > carPosX && (riverMinY - sinkWidth) < carPosY && riverMaxY > carPosY) {
+                        console.warn("sink!!!");
+                        this.sinkCar();
+                    }
+                } else if ((bodyALayerName === "houses" || bodyACar) && bodyBCar && this.activeCar) {
+                    this.cars[this.activeCar].speed = 0;
+                    this.cars[this.activeCar].audio.engineUp.stop();
+                    if (!this.cars[this.activeCar].audio.carCrash.isPlaying)
+                        this.cars[this.activeCar].audio.carCrash.play();
+                } else if (bodyBType && bodyBType === "dudes" && bodyACar){
+                    console.warn("dude reached car");
+                    return false;
+                } else {
+                    this.checkCheckpoints(bodyBName, bodyAType);
+                }
+            } catch (error) {
+                console.error(error);
             }
+        });
+    }
+
+    update() {
+        if(this.activeCar && !this.isHelpDialogActive) {
+            let keyPressed = this.keyPressed,
+                activeCarSprite = this.cars[this.activeCar],
+                currentAngle = activeCarSprite.angle;
+            console.log("update car speed: ", activeCarSprite.speed);    
+            if (keyPressed["KeyW"] || keyPressed["ArrowUp"]){
+                if(activeCarSprite.speed < maxCarSpeed) {
+                    activeCarSprite.speed += 0.004;
+                }
+                if (!activeCarSprite.audio.engineUp.isPlaying)
+                    activeCarSprite.audio.engineUp.play();
+            } else {
+                if (activeCarSprite.audio.engineUp.isPlaying)
+                    activeCarSprite.audio.engineUp.stop();
+            }
+            
+            if (keyPressed["KeyS"] || keyPressed["ArrowDown"]){
+                if (activeCarSprite.speed > maxCarBackwardSpeed) {
+                    activeCarSprite.speed -= 0.01;
+                }
+            }
+
+            if (!(keyPressed["KeyW"]) && !keyPressed["ArrowDown"]) {
+                if (activeCarSprite.speed > 0) {
+                    activeCarSprite.speed -= 0.002;
+                } else if (activeCarSprite.speed < 0) {
+                    activeCarSprite.speed += 0.001;
+                }
+            }
+            activeCarSprite.speed = activeCarSprite.speed ? parseFloat(activeCarSprite.speed.toFixed(3)) : 0;
+
+            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowLeft"] || keyPressed["KeyA"])) {
+                activeCarSprite.setAngle(currentAngle + 3);
+            }
+            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowRight"] || keyPressed["KeyD"])) {
+                activeCarSprite.setAngle(currentAngle - 3);
+            }
+            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowLeft"] || keyPressed["KeyA"])) {
+                
+                activeCarSprite.setAngle(currentAngle - 3);
+            }
+            if (activeCarSprite.speed !== 0 && (keyPressed["ArrowRight"] || keyPressed["KeyD"])) {
+                activeCarSprite.setAngle(currentAngle + 3);
+            }
+
+            if (activeCarSprite.speed >= 0) {
+                activeCarSprite.thrustLeft(activeCarSprite.speed);
+                activeCarSprite.audio.rearMoveAudio.stop();
+            } else if (activeCarSprite.speed < 0) {
+                activeCarSprite.thrustLeft(activeCarSprite.speed);
+                if(!activeCarSprite.audio.rearMoveAudio.isPlaying)
+                    activeCarSprite.audio.rearMoveAudio.play();
+            }
+        }
+    }
+
+    sinkCar() {
+        const activeCar = this.cars[this.activeCar];
+
+        activeCar.audio.engineWork.stop();
+        activeCar.audio.engineUp.stop();
+        activeCar.audio.rearMoveAudio.stop();
+        activeCar.audio.fallIntoWater.play();
+        activeCar.destroy();
+        this.activeCar = undefined;
+        this.gameOver();
+    }
+
+    gameOver() {
+        console.warn("custom event for sink in a river");
+        console.warn("game over");
+        this.gameOverPopup = this.rexUI.add.textBox({
+            x: 400,
+            y: 270,
+            // anchor: undefined,
+            width: 760,
+            //height: 100,
+        
+            orientation: 0,
+        
+            background: this.rexUI.add.roundRectangle(0, 0, 2, 2, 20, COLOR_PRIMARY)
+                .setStrokeStyle(2, COLOR_LIGHT),
+
+            icon: this.matter.add.sprite(0, 0).play('teacher_disappointed').setScale(0.3, 0.3),
+            iconMask: false,
+            text: this.add.text(0, 0, "", {
+                fontSize: '24px',
+                maxLines: 8,
+                color: '#fff',
+                wordWrap: { width: 600 },
+                padding: {
+                    left: 20,
+                }
+            }),
+            actionMask: false,
+            //enableLayer: true,
+            space: {
+                left: 10,
+                right: 5,
+                top: 5,
+                bottom: 2,
+        
+                icon: 0,
+                text: 0,
+            }
+        });
+        this.gameOverPopup.start(this.gameOverText, 50);
+        this.gameOvered = true;
+        this.gameOverPopup.setDepth(2);
+        this.overlay = this.add.rectangle(0, 0, 1600, 1200, COLOR_LIGHT, 0.4);
+        this.overlay.setDepth(1);
+        document.addEventListener('click', e => window.location.reload());
+        this.gameOverPopup.on('complete', () => {
+            document.addEventListener('keydown', e => window.location.reload());
         });
     }
 
@@ -413,52 +559,57 @@ class MainScene extends Phaser.Scene {
         keyPressed[code] = true;
 
         console.log(`Key code value: ${code}`);
-        if (keyPressed["Enter"] && this.isHelpDialogActive) {
-            this.stepTeacherTalk();
+        if (this.isHelpDialogActive) {
+            if (keyPressed["Enter"] || keyPressed["KeyE"]) {
+                this.stepTeacherTalk();
+            }
             return;
         }
         this.checkTasksStatus(keyPressed);
-        if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
-            this.player.setVelocityY(-1);
 
-            this.player.anims.play('up', true);
-        }
-        if (keyPressed["ArrowLeft"] || keyPressed["KeyA"]){
-            this.player.setVelocityX(-1);
+        if (!this.isHelpDialogActive) {
+            if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
+                this.player.setVelocityY(-1);
 
-            this.player.anims.play('left', true);
-        }
-        if (keyPressed["ArrowRight"] || keyPressed["KeyD"]){
-            this.player.setVelocityX(1);
+                this.player.anims.play('up', true);
+            }
+            if (keyPressed["ArrowLeft"] || keyPressed["KeyA"]){
+                this.player.setVelocityX(-1);
 
-            this.player.anims.play('right', true);
-        }
-        if (keyPressed["ArrowDown"] || keyPressed["KeyS"]){
-            
-            this.player.setVelocityY(1);
+                this.player.anims.play('left', true);
+            }
+            if (keyPressed["ArrowRight"] || keyPressed["KeyD"]){
+                this.player.setVelocityX(1);
 
-            this.player.anims.play('down', true);
-        }
-        //if (keyPressed["Space"]) {
-        //    this.startFireAction();
-        //}
-        if (this.player.angle !== 0) {
-            this.player.setAngle(0);
-        }
-        if (keyPressed["Enter"] || keyPressed["KeyE"]) {
-            let minDistance, closestCar;
-            Object.keys(this.cars).forEach((carKey) => {
-                let currentDistance = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.cars[carKey].x, this.cars[carKey].y);
-                if (!minDistance || currentDistance < minDistance) {
-                    minDistance = currentDistance;
-                    closestCar = carKey;
-                }
-            });
-            if(minDistance < 30) {
-                this.sitInACar(closestCar);
-            } 
-        } else {
-            this.checkActionDistance(this.player.x, this.player.y); 
+                this.player.anims.play('right', true);
+            }
+            if (keyPressed["ArrowDown"] || keyPressed["KeyS"]){
+                
+                this.player.setVelocityY(1);
+
+                this.player.anims.play('down', true);
+            }
+            //if (keyPressed["Space"]) {
+            //    this.startFireAction();
+            //}
+            if (this.player.angle !== 0) {
+                this.player.setAngle(0);
+            }
+            if (keyPressed["Enter"] || keyPressed["KeyE"]) {
+                let minDistance, closestCar;
+                Object.keys(this.cars).forEach((carKey) => {
+                    let currentDistance = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.cars[carKey].x, this.cars[carKey].y);
+                    if (!minDistance || currentDistance < minDistance) {
+                        minDistance = currentDistance;
+                        closestCar = carKey;
+                    }
+                });
+                if(minDistance < 30) {
+                    this.sitInACar(closestCar);
+                } 
+            } else {
+                this.checkActionDistance(this.player.x, this.player.y); 
+            }
         }
     }
 
@@ -469,73 +620,80 @@ class MainScene extends Phaser.Scene {
         //    this.stopFireAction(); 
         //}
         console.log(code);
-        if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
-            this.player.setVelocityY(0);
+        if (!this.isHelpDialogActive) {
+            if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
+                this.player.setVelocityY(0);
 
-            this.player.anims.play('standUp');
-        }
-        if (keyPressed["ArrowLeft"] || keyPressed["KeyA"]){
-            this.player.setVelocityX(0);
+                this.player.anims.play('standUp');
+            }
+            if (keyPressed["ArrowLeft"] || keyPressed["KeyA"]){
+                this.player.setVelocityX(0);
 
-            this.player.anims.play('standLeft', true);
-        }
-        if (keyPressed["ArrowRight"] || keyPressed["KeyD"]){
-            this.player.setVelocityX(0);
+                this.player.anims.play('standLeft', true);
+            }
+            if (keyPressed["ArrowRight"] || keyPressed["KeyD"]){
+                this.player.setVelocityX(0);
 
-            this.player.anims.play('standRight', true);
-        }
-        if (keyPressed["ArrowDown"] || keyPressed["KeyS"]){
-            
-            this.player.setVelocityY(0);
+                this.player.anims.play('standRight', true);
+            }
+            if (keyPressed["ArrowDown"] || keyPressed["KeyS"]){
+                
+                this.player.setVelocityY(0);
 
-            this.player.anims.play('standDown');
+                this.player.anims.play('standDown');
+            }
+            keyPressed[code] = false;
         }
-        keyPressed[code] = false;
     }
 
     pressKeyActionCar(event) {
-        const code = event.code,
-            keyPressed = this.keyPressed,
-            activeCarSprite = this.cars[this.activeCar],
-            currentAngle = activeCarSprite.angle;
+        if (this.activeCar) {
+            const code = event.code,
+                keyPressed = this.keyPressed,
+                activeCarSprite = this.cars[this.activeCar],
+                currentAngle = activeCarSprite.angle;
 
-        keyPressed[code] = true;
-        console.log(`Key code value: ${code}`);
-        if (this.isHelpDialogActive) {
-            this.stepTeacherTalk();
-            return;
-        }
-        if (this.firstPartTasksFinished && !this.allTasksAreComplete) {
-            const carPosX = activeCarSprite.body.position.x,
-                carPosY = activeCarSprite.body.position.y,
-                checkpointX = this.parkCheckpoint.x,
-                checkpointY = this.parkCheckpoint.y,
-                carTopLeftPosX = carPosX + (activeCarSprite.width / 2),
-                carTopLeftPosY = carPosY,
-                checkpointTopLeftX = checkpointX + (this.parkCheckpoint.width / 2),
-                checkpointTopLeftY = checkpointY;
-            if ((checkpointTopLeftX + 15 > carTopLeftPosX && carTopLeftPosX > checkpointTopLeftX) && 
-                (checkpointTopLeftY + 10 > carTopLeftPosY && carTopLeftPosY > checkpointTopLeftY)) {
-                    console.warn("reached!!!");
-                    this.tasksSecond.buttons[2].getElement("icon").setFillStyle(COLOR_LIGHT);
-                    this.tasksTracker[1][2] = true;
-                    if (this.isSecondPartTasksAreComplete()) {
-                        this.completeSecondPartTasks();
-                    };
+            keyPressed[code] = true;
+            console.log(`Key code value: ${code}`);
+            if (this.isHelpDialogActive) {
+                if (keyPressed["Enter"] || keyPressed["KeyE"]) {
+                    this.stepTeacherTalk();
+                }
+                return;
             }
-        }
-        //if (keyPressed["Space"]) {
-        //    this.startFireAction();
-        //}
-        if (keyPressed["Enter"] || keyPressed["KeyE"]) {
-            // @ToDo: fix setup player based on currentAngle
-            let posVertical = currentAngle > -45 && currentAngle < 45 || currentAngle > 135 || currentAngle < -135 ? true : false,
-                posX = posVertical ? activeCarSprite.x + 20 : activeCarSprite.x,
-                posY = posVertical ? activeCarSprite.y : activeCarSprite.y + 20;
-            this.leaveCar();
-            console.log(posVertical);
-            console.log(currentAngle)
-            this.createPlayer(posX, posY);
+            if (this.firstPartTasksFinished && !this.allTasksAreComplete) {
+                const carPosX = activeCarSprite.body.position.x,
+                    carPosY = activeCarSprite.body.position.y,
+                    checkpointX = this.parkCheckpoint.x,
+                    checkpointY = this.parkCheckpoint.y,
+                    carTopLeftPosX = carPosX + (activeCarSprite.width / 2),
+                    carTopLeftPosY = carPosY,
+                    checkpointTopLeftX = checkpointX + (this.parkCheckpoint.width / 2),
+                    checkpointTopLeftY = checkpointY;
+                if ((checkpointTopLeftX + 15 > carTopLeftPosX && carTopLeftPosX > checkpointTopLeftX) && 
+                    (checkpointTopLeftY + 10 > carTopLeftPosY && carTopLeftPosY > checkpointTopLeftY)) {
+                        console.warn("reached!!!");
+                        //const checkSVG
+                        this.tasksSecond.buttons[2].getElement("icon").setFillStyle(COLOR_LIGHT);
+                        this.tasksTracker[1][2] = true;
+                        if (this.isSecondPartTasksAreComplete()) {
+                            this.completeSecondPartTasks();
+                        };
+                }
+            }
+            //if (keyPressed["Space"]) {
+            //    this.startFireAction();
+            //}
+            if (keyPressed["Enter"] || keyPressed["KeyE"]) {
+                // @ToDo: fix setup player based on currentAngle
+                let posVertical = currentAngle > -45 && currentAngle < 45 || currentAngle > 135 || currentAngle < -135 ? true : false,
+                    posX = posVertical ? activeCarSprite.x + 20 : activeCarSprite.x,
+                    posY = posVertical ? activeCarSprite.y : activeCarSprite.y + 20;
+                this.leaveCar();
+                console.log(posVertical);
+                console.log(currentAngle)
+                this.createPlayer(posX, posY);
+            }
         }
     }
 
@@ -562,6 +720,7 @@ class MainScene extends Phaser.Scene {
 
     sitInACar(closestCar) {
         this.destroyPlayer();
+        this.resetAllKeys();
         this.setupCar(closestCar);
         if(this.firstPartTasksFinished && !this.allTasksAreComplete) {
             this.tasksSecond.buttons[0].getElement("icon").setFillStyle(COLOR_LIGHT);
@@ -589,8 +748,10 @@ class MainScene extends Phaser.Scene {
     }
 
     leaveCar() {
-        this.cars[this.activeCar].audio.startEngine.stop();
-        this.cars[this.activeCar].audio.engineWork.stop();
+        Object.keys(this.cars[this.activeCar].audio).forEach((key) => {
+            this.cars[this.activeCar].audio[key].stop();
+        });
+        this.resetAllKeys();
         this.activeCar = undefined;
         if (this.firstPartTasksFinished && !this.allTasksAreComplete) {
             this.tasksSecond.buttons[3].getElement("icon").setFillStyle(COLOR_LIGHT);
@@ -628,7 +789,8 @@ class MainScene extends Phaser.Scene {
             engineWork2: this.sound.add("engineWork2"),
             engineUp: this.sound.add("engineUp"),
             rearMoveAudio: this.sound.add("carRearMove"),
-            carCrash: this.sound.add("carCrash") 
+            carCrash: this.sound.add("carCrash"),
+            fallIntoWater: this.sound.add("fallIntoWater")
         }
 
         return car;
@@ -688,6 +850,9 @@ class MainScene extends Phaser.Scene {
         const activeTextIndex = this.getActiveTextIndex();
         this.helperText.show();
         this.helperText.start(this.helpTexts[activeTextIndex].text, 50);
+        this.overlay = this.add.rectangle(0, 0, 1600, 1200, COLOR_LIGHT, 0.4);
+        //this.matter.add.gameObject(this.overlay, {isSensor:true});
+        this.overlay.setDepth(1);
         this.helperText.childrenMap.icon.anims.restart(false, true);
         this.isHelpDialogActive = true;
     }
@@ -698,6 +863,7 @@ class MainScene extends Phaser.Scene {
         this.isHelpDialogActive = false;
         this.helperText.hide();
         this.createHelpIcon();
+        this.overlay.destroy();
         if (this.pointer) {
             this.pointer.destroy();
             this.pipelineInstance.remove(this.player);
@@ -709,7 +875,7 @@ class MainScene extends Phaser.Scene {
         this.pointer.setStrokeStyle(2, COLOR_LIGHT);
         this.pointer.originX = 0;
         this.pointer.originY = 0;
-        this.pointer.setDepth(0);
+        this.pointer.setDepth(2);
         this.pipelineInstance.add(this.player, {thickness: 1});
     }
 
@@ -755,7 +921,7 @@ class MainScene extends Phaser.Scene {
         }).layout();
 
         this.helpIcon.on("button.click", (btn, i, pointer, event) => {
-            if (!this.helperText.visible) {
+            if (!this.helperText.visible && !this.gameOvered) {
                 if (!this.firstPartTasksFinished) {
                     this.helpTexts[0].active = true;
                 } else if (!this.allTasksAreComplete) {
@@ -887,6 +1053,10 @@ class MainScene extends Phaser.Scene {
 
     isAllCheckpointsReached() {
         return this.checkpointsReached.filter(item => item === true).length === 3;
+    }
+
+    resetAllKeys() {
+        Object.keys(this.keyPressed).forEach((key) => this.keyPressed[key] = false);
     }
 }
 

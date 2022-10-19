@@ -20,6 +20,10 @@ visit localhost:8080
     Added crush car sound
     Added car gear up sound
     Added water collisions
+0.0.4
+    Added water interaction, the game ends, and ask for restart
+    Reduced max car speed
+    Added talking overlay
 # Road map
-1. Add water interaction, the game should ends, and ask for restart
+1. Add car sink animation
 2. Fix parking car calculations
