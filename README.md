@@ -24,6 +24,9 @@ visit localhost:8080
     Added water interaction, the game ends, and ask for restart
     Reduced max car speed
     Added talking overlay
+0.0.41
+    Added checkbox sign
 # Road map
 1. Add car sink animation
 2. Fix parking car calculations
+3. Add sound for checkbox switch

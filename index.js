@@ -9,6 +9,7 @@ const COLOR_PRIMARY = 0x4e342e;
 const COLOR_LIGHT = 0x7b5e57;
 const COLOR_DARK = 0x260e04;
 const COLOR_STROKE = 0xdddddd;
+const COLOR_DONE = 0x50c878;
 
 class MainScene extends Phaser.Scene {
 
@@ -28,7 +29,7 @@ class MainScene extends Phaser.Scene {
         this.load.spritesheet('dudes', 'images/sity-2d/Tilemap/dudes.png', { frameWidth: 16, frameHeight: 16 });
         this.load.image('car', 'images/racingpack/PNG/Cars/car_black_1.png');
         this.load.image('car2', 'images/racingpack/PNG/Cars/car_red_4.png');
-        this.load.image('check', 'images/check.svg');
+        this.load.image('checkImage', 'images/check.svg');
         //this.load.spritesheet('teacher', 'images/teacher_sprite_cut.jpg', { frameWidth: 82, frameHeight: 32 });
         this.load.spritesheet('teacher', 'images/teacher_sprite.png', { frameWidth: 342, frameHeight: 523 });
 
@@ -537,14 +538,25 @@ class MainScene extends Phaser.Scene {
         const checkbox = this.rexUI.add.label({
             width:280,
             background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, COLOR_PRIMARY).setStrokeStyle(2, COLOR_LIGHT),
-            icon: this.add.circle(0, 0, 10).setStrokeStyle(1, COLOR_DARK),
+            icon: this.add.container(0, 0, [
+                this.add.circle(0, 0, 10).setStrokeStyle(1, COLOR_DARK),
+                this.make.image({
+                x:3,
+                y:-5, 
+                key: "checkImage",
+                scale : {
+                    x: 0.015,
+                    y: 0.015
+                },
+                alpha:0
+            }).setTintFill(COLOR_DONE)]),
             text: this.add.text(0, 0, text, {
                 fontSize: 18,
                 wordWrap: { width: 240 }
             }),
             space: {
-                left: 10, right: 10, top: 10, bottom: 10,
-                icon: 10
+                left: 20, right: 10, top: 10, bottom: 10,
+                icon: 20
             },
             align: 'left',
             name: text
@@ -589,6 +601,7 @@ class MainScene extends Phaser.Scene {
 
                 this.player.anims.play('down', true);
             }
+            
             //if (keyPressed["Space"]) {
             //    this.startFireAction();
             //}
@@ -674,7 +687,7 @@ class MainScene extends Phaser.Scene {
                     (checkpointTopLeftY + 10 > carTopLeftPosY && carTopLeftPosY > checkpointTopLeftY)) {
                         console.warn("reached!!!");
                         //const checkSVG
-                        this.tasksSecond.buttons[2].getElement("icon").setFillStyle(COLOR_LIGHT);
+                        this.setCheckButton(this.tasksSecond.buttons[2].getElement("icon"));
                         this.tasksTracker[1][2] = true;
                         if (this.isSecondPartTasksAreComplete()) {
                             this.completeSecondPartTasks();
@@ -723,9 +736,9 @@ class MainScene extends Phaser.Scene {
         this.resetAllKeys();
         this.setupCar(closestCar);
         if(this.firstPartTasksFinished && !this.allTasksAreComplete) {
-            this.tasksSecond.buttons[0].getElement("icon").setFillStyle(COLOR_LIGHT);
+            this.setCheckButton(this.tasksSecond.buttons[0].getElement("icon"));
             this.tasksTracker[1][0] = true;
-            this.objectivesComplete.sitInACar = true;
+            this.objectivesComplete.sitInACar = true;icon
             if (this.isSecondPartTasksAreComplete()) {
                 this.completeSecondPartTasks();
             };
@@ -754,7 +767,7 @@ class MainScene extends Phaser.Scene {
         this.resetAllKeys();
         this.activeCar = undefined;
         if (this.firstPartTasksFinished && !this.allTasksAreComplete) {
-            this.tasksSecond.buttons[3].getElement("icon").setFillStyle(COLOR_LIGHT);
+            this.setCheckButton(this.tasksSecond.buttons[3].getElement("icon"));
             this.tasksTracker[1][3] = true;
             if (this.isSecondPartTasksAreComplete()) {
                 this.completeSecondPartTasks();
@@ -812,7 +825,7 @@ class MainScene extends Phaser.Scene {
                     car.active = true;
                 }
                 if(!this.firstPartTasksFinished) {
-                    this.tasksFirst.buttons[4].getElement("icon").setFillStyle(COLOR_LIGHT);
+                    this.setCheckButton(this.tasksFirst.buttons[4].getElement("icon"));
                     this.tasksTracker[0][4] = true;
                     if (this.isFirstPartTasksAreComplete()) {
                         this.completeFirstPartTasks();
@@ -946,20 +959,20 @@ class MainScene extends Phaser.Scene {
     checkTasksStatus(keyPressed) {
         console.log("check task status");
         if(!this.firstPartTasksFinished) {
-            if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
-                this.tasksFirst.buttons[0].getElement("icon").setFillStyle(COLOR_LIGHT);
+            if (keyPressed["ArrowUp"] || keyPressed["KeyW"]) {
+                this.setCheckButton(this.tasksFirst.buttons[0].getElement("icon"));
                 this.tasksTracker[0][0] = true; 
             }
-            if (keyPressed["ArrowLeft"] || keyPressed["KeyA"]){
-                this.tasksFirst.buttons[2].getElement("icon").setFillStyle(COLOR_LIGHT);
+            if (keyPressed["ArrowLeft"] || keyPressed["KeyA"]) {
+                this.setCheckButton(this.tasksFirst.buttons[2].getElement("icon"));
                 this.tasksTracker[0][2] = true;
             }
-            if (keyPressed["ArrowRight"] || keyPressed["KeyD"]){
-                this.tasksFirst.buttons[3].getElement("icon").setFillStyle(COLOR_LIGHT);
+            if (keyPressed["ArrowRight"] || keyPressed["KeyD"]) {
+                this.setCheckButton(this.tasksFirst.buttons[3].getElement("icon"));
                 this.tasksTracker[0][3] = true;
             }
-            if (keyPressed["ArrowDown"] || keyPressed["KeyS"]){
-                this.tasksFirst.buttons[1].getElement("icon").setFillStyle(COLOR_LIGHT);
+            if (keyPressed["ArrowDown"] || keyPressed["KeyS"]) {
+                this.setCheckButton(this.tasksFirst.buttons[1].getElement("icon"));
                 this.tasksTracker[0][1] = true;
             }
             if (this.isFirstPartTasksAreComplete()) {
@@ -1039,7 +1052,7 @@ class MainScene extends Phaser.Scene {
             console.warn("please get in the car!!!");
         }
         if (this.firstPartTasksFinished && !this.allTasksAreComplete && this.isAllCheckpointsReached()) {
-            this.tasksSecond.buttons[1].getElement("icon").setFillStyle(COLOR_LIGHT);
+            this.setCheckButton(this.tasksSecond.buttons[1].getElement("icon"));
             this.tasksTracker[1][1] = true;
             if (this.isSecondPartTasksAreComplete()) {
                 this.completeSecondPartTasks();
@@ -1057,6 +1070,11 @@ class MainScene extends Phaser.Scene {
 
     resetAllKeys() {
         Object.keys(this.keyPressed).forEach((key) => this.keyPressed[key] = false);
+    }
+
+    setCheckButton(container) {
+        container.first.setFillStyle(COLOR_LIGHT);
+        container.next.setAlpha(1);
     }
 }
 
