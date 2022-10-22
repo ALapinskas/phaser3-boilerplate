@@ -33,9 +33,9 @@ class MainScene extends Phaser.Scene {
         //this.load.spritesheet('teacher', 'images/teacher_sprite_cut.jpg', { frameWidth: 82, frameHeight: 32 });
         this.load.spritesheet('teacher', 'images/teacher_sprite.png', { frameWidth: 342, frameHeight: 523 });
 
-        this.load.plugin('rexoutlinepipelineplugin', './node_modules/phaser3-rex-plugins/dist/rexoutlinepipelineplugin.min.js', true);
+        this.load.plugin('rexoutlinepipelineplugin', './lib/phaser3-rex-plugins/dist/rexoutlinepipelineplugin.min.js', true);
 
-        this.load.scenePlugin('rexuiplugin', './node_modules/phaser3-rex-plugins/dist/rexuiplugin.js', 'rexUI', 'rexUI');
+        this.load.scenePlugin('rexuiplugin', './lib/phaser3-rex-plugins/dist/rexuiplugin.js', 'rexUI', 'rexUI');
 
         this.load.audio('startEngine1', './assets/engine_start.mp3');
         this.load.audio('carRearMove', './assets/car_rearmove.mp3');
@@ -738,7 +738,7 @@ class MainScene extends Phaser.Scene {
         if(this.firstPartTasksFinished && !this.allTasksAreComplete) {
             this.setCheckButton(this.tasksSecond.buttons[0].getElement("icon"));
             this.tasksTracker[1][0] = true;
-            this.objectivesComplete.sitInACar = true;icon
+            this.objectivesComplete.sitInACar = true;
             if (this.isSecondPartTasksAreComplete()) {
                 this.completeSecondPartTasks();
             };

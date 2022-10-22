@@ -26,7 +26,13 @@ visit localhost:8080
     Added talking overlay
 0.0.41
     Added checkbox sign
+0.0.42
+    Added js minificator
+    Fixed npm tasks
 # Road map
 1. Add car sink animation
 2. Fix parking car calculations
 3. Add sound for checkbox switch
+4. Add a start menu with settings option
+5. Add game sound level setting
+6. Add settings saving/retrieving via localStorage
