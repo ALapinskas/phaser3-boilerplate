@@ -10,17 +10,21 @@ const COLOR_LIGHT = 0x7b5e57;
 const COLOR_DARK = 0x260e04;
 const COLOR_STROKE = 0xdddddd;
 const COLOR_DONE = 0x50c878;
+const START_OPTIONS_COLOR = 0xffffff;
+const START_OPTIONS_BG = 0x000000;
+const DEFAULT_VOLUME_VALUE = 0.4;
 
 class MainScene extends Phaser.Scene {
 
     preload() {
+        const soundVolumeValue = localStorage.getItem('soundVolume');
         this.keyPressed = { ArrowUp: false, KeyW: false, ArrowLeft: false, KeyA: false, ArrowRight: false, KeyD: false, ArrowDown: false, KeyS: false,
             Enter:false, KeyE:false };
         this.activeCar;
         this.cars = {};
         this.objectivesComplete = { sitInACar: false, driveAround: false, leaveCar: false };
         this.startGameTitle;
-        this.startGameHelper;
+        this.startGameOptions;
         this.load.image({
             key: 'tiles',
             url: 'images/sity-2d/Tilemap/tilemap_packed.png',
@@ -44,7 +48,9 @@ class MainScene extends Phaser.Scene {
         this.load.audio('engineWork2', '/assets/engine_work2.mp3');
         this.load.audio('engineUp', '/assets/engine_up.mp3');
         this.load.audio('fallIntoWater', '/assets/large-falls-into-water.mp3');
-
+        this.load.audio('startMenuSelect', '/assets/start_menu_select.mp3');
+        this.soundVolumeValue = soundVolumeValue ? soundVolumeValue : DEFAULT_VOLUME_VALUE;
+        this.sound.setVolume(this.soundVolumeValue); 
         this.helpTexts = [
             {
                 "active": true,
@@ -82,6 +88,7 @@ class MainScene extends Phaser.Scene {
         this.firstPartTasksFinished = false;
         this.allTasksAreComplete = false;
         this.isHelpDialogActive = true;
+        this.isSettingPageActive = false;
         this.tasksTracker = [[false, false, false, false, false], [false, false, false, false]];
         this.pressKeyActionPlayer = this.pressKeyActionPlayer.bind(this);
         this.removeKeyActionPlayer = this.removeKeyActionPlayer.bind(this);
@@ -144,6 +151,10 @@ class MainScene extends Phaser.Scene {
             key: 'standRight',
             frames: [ { key: 'dudes', frame: 3 } ]
         });
+
+        this.startMenuSounds = {
+            itemSelect: this.sound.add("startMenuSelect")
+        }
         //dudes.push(this.add.existing(new Dude(this, 240, 290, 'walk', 'west', 10)));
         //dudes.push(this.add.existing(new Dude(this, 100, 380, 'walk', 'northWest', 20)));
         //dudes.push(this.add.existing(new Dude(this, 620, 140, 'walk', 'south', 30)));
@@ -507,28 +518,85 @@ class MainScene extends Phaser.Scene {
         document.removeEventListener('keydown', this.startGame);
         this.gameStarted = true;
         this.startGameTitle.destroy();
-        this.startGameHelper.destroy();
-        this.buildMap();
+        this.startGameOptions.destroy();
+        this.buildMap(); 
     }
 
     renderBanner() {
         this.startGame = this.startGame.bind(this);
-        this.startGameTitle = this.add.text(350, 260, "Start", {
-            fontSize: 44,
+        this.startGameTitle = this.add.text(260, 260, "Interactive school", {
+            fontSize: 32,
         });
-        this.startGameHelper = this.add.text(310, 310, "Press Enter, or click", {
-            fontSize:18
+        this.startGameOptions = this.rexUI.add.fixWidthButtons({
+            x: 340,
+            y: 350,
+            buttons: [
+                this.rexUI.add.label({
+                    width: 30,
+                    //background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, START_OPTIONS_COLOR).setStrokeStyle(2, START_OPTIONS_COLOR),
+                    icon: this.add.circle(0, 0, 10).setStrokeStyle(1, START_OPTIONS_COLOR),
+                    text: this.add.text(0, 0, "Start game", {
+                        fontSize: 20,
+                    }),
+                    space: {
+                        left: 10, right: 10, top: 10, bottom: 10,
+                        icon: 10
+                    },
+                    align: 'left',
+                    name: "play"
+                }),
+                this.rexUI.add.label({
+                    width: 30,
+                    //background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, START_OPTIONS_COLOR).setStrokeStyle(2, START_OPTIONS_COLOR),
+                    icon: this.add.circle(0, 0, 10).setStrokeStyle(1, START_OPTIONS_COLOR),
+                    text: this.add.text(0, 0, "Options", {
+                        fontSize: 20,
+                    }),
+                    space: {
+                        left: 10, right: 10, top: 10, bottom: 10,
+                        icon: 10
+                    },
+                    align: 'left',
+                    name: "options"
+                })
+                // ...
+            ],
+            // rtl: false,
+            align: 0,
+            click: {
+                mode: 'pointerup',
+                clickInterval: 100
+            },
+            space: {
+                line: 3,
+            }
+        }).layout();
+
+        this.startGameOptions.on("button.click", (btn, i, pointer, event) => {
+            if (!this.startMenuSounds.itemSelect.isPlaying) { 
+                this.startMenuSounds.itemSelect.play();
+            }
+            if (btn.name === "play") {
+                this.startGame();
+            } else {
+                this.openSettingPage();
+            }
         });
-        this.startGameTitle.setInteractive();
 
-        this.startGameTitle.on("pointerdown", this.startGame);
-
-        this.startGameTitle.on("pointerover", (btn, i, pointer, event) => {
-            document.body.style.cursor = "pointer";    
+        this.startGameOptions.on("button.over", (btn, i, pointer, event) => {
+            btn.children[0].setFillStyle(START_OPTIONS_COLOR);
+            btn.children[1].setStroke("#fff", 1);
+            document.body.style.cursor = "pointer";       
+           
         });
 
-        this.startGameTitle.on("pointerout", (btn, i, pointer, event) => {
+        this.startGameOptions.on("button.out", (btn, i, pointer, event) => {
+            btn.children[0].setFillStyle();
+            btn.children[1].setStroke("#fff", 0);
             document.body.style.cursor = "auto";
+            if (this.startMenuSounds.itemSelect.isPlaying) { 
+                this.startMenuSounds.itemSelect.stop();
+            }
         });
 
         document.addEventListener('keydown', this.startGame);
@@ -876,11 +944,134 @@ class MainScene extends Phaser.Scene {
         this.isHelpDialogActive = false;
         this.helperText.hide();
         this.createHelpIcon();
+        this.createSettingsIcon()
         this.overlay.destroy();
         if (this.pointer) {
             this.pointer.destroy();
             this.pipelineInstance.remove(this.player);
         }
+    }
+
+    openSettingPage() {
+        this.isHelpDialogActive = true;
+        this.overlay = this.add.rectangle(0, 0, 1600, 1200, START_OPTIONS_BG, 1);
+        this.overlay.setDepth(1);
+
+        this.soundLabel = this.add.text(150, 200, 'sound volume:').setDepth(2);
+        this.soundVolume = this.rexUI.add.slider({
+            x: 380,
+            y: 210,
+            width: 200,
+            height: 20,
+            orientation: 'x',
+
+            track: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, COLOR_DARK),
+            indicator: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, COLOR_PRIMARY),
+            thumb: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, COLOR_PRIMARY),
+
+            valuechangeCallback: (value) => {
+                localStorage.setItem("soundVolume", value);
+                this.soundVolumeValue = value;
+                this.sound.setVolume(value); 
+            },
+            space: {
+                top: 4,
+                bottom: 4
+            },
+            input: 'click',
+            value: this.soundVolumeValue
+        }).layout().setDepth(2);
+
+        this.settingsPageActions = this.rexUI.add.gridButtons({
+            x: 340,
+            y: 350,
+            buttons: [
+                [this.rexUI.add.label({
+                    width: 30,
+                    //background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, START_OPTIONS_COLOR).setStrokeStyle(2, START_OPTIONS_COLOR),
+                    //icon: this.add.circle(0, 0, 10).setStrokeStyle(1, START_OPTIONS_COLOR),
+                    text: this.add.text(0, 0, "Back", {
+                        fontSize: 20,
+                        color: "#fff",
+                    }),
+                    space: {
+                        left: 10, right: 10, top: 10, bottom: 10,
+                        icon: 10
+                    },
+                    align: 'left',
+                    name: "back"
+                }),
+                this.rexUI.add.label({
+                    width: 30,
+                    //background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, START_OPTIONS_COLOR).setStrokeStyle(2, START_OPTIONS_COLOR),
+                    //icon: this.add.circle(0, 0, 10).setStrokeStyle(1, START_OPTIONS_COLOR),
+                    text: this.add.text(0, 0, "Set defaults", {
+                        fontSize: 20,
+                        color: "#fff",
+                    }),
+                    space: {
+                        left: 10, right: 10, top: 10, bottom: 10,
+                        icon: 10
+                    },
+                    align: 'left',
+                    name: "defaults"
+                })]
+                // ...
+            ],
+            // rtl: false,
+            align: 0,
+            click: {
+                mode: 'pointerup',
+                clickInterval: 100
+            },
+            space: {
+                line: 3,
+            }
+        }).layout();
+
+        this.settingsPageActions.setDepth(2);
+
+        this.settingsPageActions.on("button.click", (btn, i, pointer, event) => {
+            if (!this.startMenuSounds.itemSelect.isPlaying) { 
+                this.startMenuSounds.itemSelect.play();
+            }
+            if (btn.name === "back") {
+                this.hideSettingPage();
+            } else if (btn.name === "defaults") {
+                this.resetSettings();
+            }
+        });
+
+        this.settingsPageActions.on("button.over", (btn, i, pointer, event) => {
+            btn.children[0].setStroke("#fff", 1);
+            document.body.style.cursor = "pointer";
+        });
+
+        this.settingsPageActions.on("button.out", (btn, i, pointer, event) => {
+            btn.children[0].setStroke(START_OPTIONS_COLOR, 0);
+            document.body.style.cursor = "auto";
+            if (this.startMenuSounds.itemSelect.isPlaying) { 
+                this.startMenuSounds.itemSelect.stop();
+            }
+        });
+        
+        console.log("open settings page 2");
+    }
+
+    hideSettingPage() {
+        this.isHelpDialogActive = false;
+        this.soundLabel.destroy();
+        this.soundVolume.destroy();
+        this.overlay.destroy();
+        this.settingsPageActions.destroy();
+        console.log("hide settings page");
+    }
+
+    resetSettings() {
+        localStorage.setItem("soundVolume", DEFAULT_VOLUME_VALUE);
+        this.soundVolumeValue = DEFAULT_VOLUME_VALUE;
+        this.soundVolume.setValue(DEFAULT_VOLUME_VALUE);
+        this.sound.setVolume(DEFAULT_VOLUME_VALUE); 
     }
 
     addCharacterPointer() {
@@ -947,11 +1138,63 @@ class MainScene extends Phaser.Scene {
         });
 
         this.helpIcon.on("button.over", (btn, i, pointer, event) => {
+            btn.backgroundChildren[0].setFillStyle(COLOR_LIGHT);
             if (!this.helperText.visible)
                 document.body.style.cursor = "pointer";
         });
 
         this.helpIcon.on("button.out", (btn, i, pointer, event) => {
+            btn.backgroundChildren[0].setFillStyle(COLOR_PRIMARY);
+            document.body.style.cursor = "auto";
+        });
+    }
+
+    createSettingsIcon() {
+        const iconButton = this.rexUI.add.label({
+            width: 30,
+            background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, COLOR_PRIMARY).setStrokeStyle(2, COLOR_LIGHT),
+            //icon: this.add.circle(0, 0, 10).setStrokeStyle(1, COLOR_DARK),
+            text: this.add.text(0, 0, "⚙", {
+                fontSize: 20,
+            }),
+            space: {
+                left: 10, right: 10, top: 10, bottom: 10,
+                icon: 10
+            },
+            align: 'left',
+            name: "icon"
+        });
+
+        this.settingsIcon = this.rexUI.add.fixWidthButtons({
+            x: 760,
+            y: 40,
+            buttons: [
+                iconButton,
+                // ...
+            ],
+            // rtl: false,
+            align: 0,
+            click: {
+                mode: 'pointerup',
+                clickInterval: 100
+            },
+            space: {
+                line: 3,
+            }
+        }).layout();
+
+        this.settingsIcon.on("button.click", (btn, i, pointer, event) => {
+            this.openSettingPage();
+        });
+
+        this.settingsIcon.on("button.over", (btn, i, pointer, event) => {
+            btn.backgroundChildren[0].setFillStyle(COLOR_LIGHT);
+            if (!this.helperText.visible)
+                document.body.style.cursor = "pointer";
+        });
+
+        this.settingsIcon.on("button.out", (btn, i, pointer, event) => {
+            btn.backgroundChildren[0].setFillStyle(COLOR_PRIMARY);
             document.body.style.cursor = "auto";
         });
     }
