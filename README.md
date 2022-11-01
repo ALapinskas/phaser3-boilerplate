@@ -30,10 +30,12 @@ visit localhost:8080
     Added js minificator
     Fixed npm tasks
 0.0.5
-    Add start settings options buttons
-    Add start options buttons animations
-    Add game sound level setting
-    Add settings saving/retrieving via localStorage
+    Added start settings options buttons
+    Added start options buttons animations
+    Added game sound level setting
+    Added settings saving/retrieving via localStorage
+0.0.51
+    Added Building names
 # Road map
 1. Add car sink animation
 2. Fix parking car calculations

@@ -181,6 +181,10 @@ class MainScene extends Phaser.Scene {
         
         map.createLayer('decorations', tileset); 
         map.createLayer('decorations2', tileset);
+        
+        map.getObjectLayer('building_names').objects.forEach((objectLayer) => {
+            this.add.text(objectLayer.x, objectLayer.y, objectLayer.text.text,  {color: objectLayer.text.color, stroke: objectLayer.text.color, strokeThickness: 1, backgroundColor: "#ccc"});
+        });
         var riverLayer = map.createLayer('river', tileset);
 
         this.riverLayerDimensions = {
@@ -189,8 +193,6 @@ class MainScene extends Phaser.Scene {
             maxWidth: 0,
             maxHeight: 0
         };
-    
-        this.riverArea = this.add.rectangle(680, 120, 50, 30, COLOR_LIGHT, 0.6);
 
         housesLayer.setCollisionByExclusion([-1]);
         //housesLayer.setCollisionByProperty({ collides: true }); //doesn't works for some reasons
@@ -226,14 +228,14 @@ class MainScene extends Phaser.Scene {
         this.riverLayerDimensions.maxWidth += riverLayer.tilemap.tileWidth;
         this.riverLayerDimensions.maxHeight += riverLayer.tilemap.tileHeight;
 
-        this.parkCheckpoint = this.add.rectangle(680, 120, 50, 30, COLOR_LIGHT, 0.6);
+        this.parkCheckpoint = this.add.rectangle(535, 125, 50, 30, COLOR_LIGHT, 0.6);
         const parkCheck = this.matter.add.gameObject(this.parkCheckpoint, {isSensor:true});
         parkCheck.setData("name", "parkCheckpoint");
         parkCheck.setDepth(0);
 
         this.cars["car"] = this.createCar(248, 500, 0, 0.9, 100, 'car');
         //this.cars["car"] = this.createCar(520, 220, 0, 0.9, 100, 'car');
-        this.cars["car2"] = this.createCar(680, 93, 90, 1.2, 500, 'car2');
+        this.cars["car2"] = this.createCar(535, 93, 90, 1.2, 500, 'car2');
         
         this.pipelineInstance = this.plugins.get('rexoutlinepipelineplugin');
     
@@ -278,43 +280,6 @@ class MainScene extends Phaser.Scene {
         });
         this.helperText.setDepth(3);
 
-        /*
-        this.tasksTitle = this.rexUI.add.label({
-            x: 580,
-            y: 340,
-            // anchor: undefined,
-            // width: undefined,
-            // height: undefined,
-        
-            orientation: 0,
-            // rtl: false,
-        
-            iconMask: false,
-            text: this.add.text(0, 0, "Objectives:", {
-                fontSize: 24,
-            }),
-            expandTextWidth: false,
-            expandTextHeight: false,
-            actionMask: false,
-        
-            align: undefined,
-        
-            space: {
-                left: 0,
-                right: 0,
-                top: 0,
-                bottom: 0,
-        
-                icon: 0,
-                text: 0,
-            },
-        
-            // name: '',
-            // draggable: false,
-            // sizerEvents: false,
-            // enableLayer: false,
-        }).layout();
-        */
         this.tasksFirst = this.rexUI.add.fixWidthButtons({
             x: 640,
             y: 480,
@@ -578,6 +543,7 @@ class MainScene extends Phaser.Scene {
             }
             if (btn.name === "play") {
                 this.startGame();
+                document.body.style.cursor = "auto";
             } else {
                 this.openSettingPage();
             }
@@ -1037,6 +1003,7 @@ class MainScene extends Phaser.Scene {
             }
             if (btn.name === "back") {
                 this.hideSettingPage();
+                document.body.style.cursor = "auto";
             } else if (btn.name === "defaults") {
                 this.resetSettings();
             }
