@@ -4,22 +4,22 @@
   "description": "",
   "main": "index.js",
   "watch": {
-    "build-dev": "./index.js"
+    "build-dev": "./src/index.js"
   },
   "scripts": {
     "start": "./node_modules/.bin/autoreload-server -w 'dist/**.{html,css,js}' -m ./assets -t /assets -m ./images -t /images ./dist 8088",
-    "build-dev": "cp ./index.js ./dist/main.min.js",
-    "build-prod": "./node_modules/javascript-obfuscator/bin/javascript-obfuscator index.js --output dist/main.min.js",
+    "build-dev": "./node_modules/.bin/google-closure-compiler --js='./src/*.js' -O 'BUNDLE' --js_output_file='./dist/main.min.js'",
+    "build-prod": "./node_modules/.bin/google-closure-compiler --js='./src/*.js' -O 'ADVANCED' --js_output_file='./dist/main.min.js'",
     "watch": "npm-watch"
   },
   "author": "Arturas-Alfredas Lapinskas",
   "license": "MIT",
   "dependencies": {
+    "google-closure-compiler": "^20221004.0.0",
     "phaser": "3.55.2",
     "phaser3-rex-plugins": "1.1.72"
   },
   "devDependencies": {
-    "javascript-obfuscator": "^4.0.0",
     "npm-watch": "0.11.0",
     "simple-autoreload-server": "0.2.15"
   }

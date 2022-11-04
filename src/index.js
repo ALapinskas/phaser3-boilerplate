@@ -1,18 +1,5 @@
-var score = 0;
-var map, buildings, river;
-var scoreText;
-var dudes = [];
-var cursors;
-var maxCarSpeed = 0.2;
-var maxCarBackwardSpeed = -0.1;
-const COLOR_PRIMARY = 0x4e342e;
-const COLOR_LIGHT = 0x7b5e57;
-const COLOR_DARK = 0x260e04;
-const COLOR_STROKE = 0xdddddd;
-const COLOR_DONE = 0x50c878;
-const START_OPTIONS_COLOR = 0xffffff;
-const START_OPTIONS_BG = 0x000000;
-const DEFAULT_VOLUME_VALUE = 0.4;
+import CONSTANTS from "./constants";
+import { Person, Dialog, DialogInjectable, DialogSelectable, SelectableText } from "./person";
 
 class MainScene extends Phaser.Scene {
 
@@ -20,11 +7,14 @@ class MainScene extends Phaser.Scene {
         const soundVolumeValue = localStorage.getItem('soundVolume');
         this.keyPressed = { ArrowUp: false, KeyW: false, ArrowLeft: false, KeyA: false, ArrowRight: false, KeyD: false, ArrowDown: false, KeyS: false,
             Enter:false, KeyE:false };
-        this.activeCar;
+        this.activeCar = undefined;
+        this.cursors = undefined;
+        this.startGameTitle = undefined;
+        this.startGameOptions = undefined;
+        this.playerName = undefined;
         this.cars = {};
+        this.people = {};
         this.objectivesComplete = { sitInACar: false, driveAround: false, leaveCar: false };
-        this.startGameTitle;
-        this.startGameOptions;
         this.load.image({
             key: 'tiles',
             url: 'images/sity-2d/Tilemap/tilemap_packed.png',
@@ -47,39 +37,11 @@ class MainScene extends Phaser.Scene {
         this.load.audio('engineWork', '/assets/engine_work.mp3');
         this.load.audio('engineWork2', '/assets/engine_work2.mp3');
         this.load.audio('engineUp', '/assets/engine_up.mp3');
+        this.load.audio('carLocked', '/assets/car_locked.mp3');
         this.load.audio('fallIntoWater', '/assets/large-falls-into-water.mp3');
         this.load.audio('startMenuSelect', '/assets/start_menu_select.mp3');
-        this.soundVolumeValue = soundVolumeValue ? soundVolumeValue : DEFAULT_VOLUME_VALUE;
+        this.soundVolumeValue = soundVolumeValue ? soundVolumeValue : CONSTANTS.DEFAULT_VOLUME_VALUE;
         this.sound.setVolume(this.soundVolumeValue); 
-        this.helpTexts = [
-            {
-                "active": true,
-                "last": false,
-                "text": [ 
-                    "Hello student! My name is Monica, i'll be you teacher today! Press Enter key to continue..."
-                ]
-            },
-            {
-                "active": false,
-                "last": true,
-                "text": "This is your character. To move use w,a,d,s, or arrow buttons on your keyboard.\nComplete objectives on the right to finish the exercise. Press Enter key to continue..."
-            },
-            {
-                "active": false,
-                "last": false,
-                "text": "Well done! When you come closer, the car become highlighted, this means you can interact with it. Press 'e' or 'Enter' to start interaction. Press Enter key to continue..."
-            },
-            {
-                "active": false,
-                "last": true,
-                "text": "Next tasks will be with driving the car. While you will be inside the car push 'w', or '↑' to gear up, 's', or '↓' to break, or move backward. While you're moving press 'a' or '←' to turn left, 'd' or '→' to turn right. Press Enter key to continue..."
-            },
-            {
-                "active": false,
-                "last": true,
-                "text": "Congratulation's you finished all the tasks! Exam is passed. Press Enter key to continue..."
-            }
-        ];
 
         this.gameOverText = "Oh no!!! You sinked. Now you will have to start from the beginning!";
 
@@ -87,13 +49,17 @@ class MainScene extends Phaser.Scene {
         this.gameOvered = false;
         this.firstPartTasksFinished = false;
         this.allTasksAreComplete = false;
-        this.isHelpDialogActive = true;
+        this.activeSpeaker = undefined;
         this.isSettingPageActive = false;
         this.tasksTracker = [[false, false, false, false, false], [false, false, false, false]];
         this.pressKeyActionPlayer = this.pressKeyActionPlayer.bind(this);
         this.removeKeyActionPlayer = this.removeKeyActionPlayer.bind(this);
         this.pressKeyActionCar = this.pressKeyActionCar.bind(this);
         this.removeKeyActionCar = this.removeKeyActionCar.bind(this);
+
+        this.pressKeyActionDialog = this.pressKeyActionDialog.bind(this);
+        this.removeKeyActionDialog = this.removeKeyActionDialog.bind(this);
+        this.clickActionDialog = this.clickActionDialog.bind(this);
     }
 
     create() {
@@ -167,7 +133,7 @@ class MainScene extends Phaser.Scene {
 
     buildMap () {
         //buildings = scene.physics.add.staticGroup();
-        cursors = this.input.keyboard.createCursorKeys(); 
+        this.cursors = this.input.keyboard.createCursorKeys(); 
         //  Parse the data out of the map
         const map = this.make.tilemap({ key: 'map'});
     
@@ -228,16 +194,72 @@ class MainScene extends Phaser.Scene {
         this.riverLayerDimensions.maxWidth += riverLayer.tilemap.tileWidth;
         this.riverLayerDimensions.maxHeight += riverLayer.tilemap.tileHeight;
 
-        this.parkCheckpoint = this.add.rectangle(535, 125, 50, 30, COLOR_LIGHT, 0.6);
-        const parkCheck = this.matter.add.gameObject(this.parkCheckpoint, {isSensor:true});
+        this.parkCheckpoint = this.add.rectangle(535, 125, 50, 30, CONSTANTS.COLOR_LIGHT, 0.6);
+        const parkCheck = this.matter.add.gameObject(this.parkCheckpoint, { isSensor:true });
         parkCheck.setData("name", "parkCheckpoint");
         parkCheck.setDepth(0);
 
         this.cars["car"] = this.createCar(248, 500, 0, 0.9, 100, 'car');
+        this.cars["car"].locked = true;
         //this.cars["car"] = this.createCar(520, 220, 0, 0.9, 100, 'car');
         this.cars["car2"] = this.createCar(535, 93, 90, 1.2, 500, 'car2');
+
+        this.people["monica"] = this.createPerson(190, 450, "monica", 15);
+        this.people["monica"].setDialogs([
+            new DialogInjectable (
+                "Hello student! My name is Monica, i'll be you teacher today! What is your name?",
+                "My name is: ",
+                "Please enter your name.",
+                true
+            ),
+            new Dialog (
+                "Nice to meet you! " + this.playerName + ". You will have to finish tasks to pass the exam, the current and done tasks will eb written in your diary, please click on the diary icon on the right bottom.\n"
+            ),
+            new Dialog (
+                "Well done! Now you see the task list, finish all the tasks in the list to go further.\n"
+            ),
+            new Dialog (
+                "When you come closer, the car become highlighted, this means you can interact with it. Press 'e' or 'Enter' to start interaction.\n"
+            ),
+            new Dialog (
+                "Looks like the car is locked, go and talk to Joe, is is standing near the hospital entrance.\n"
+            ),
+            new Dialog (
+                "Next tasks will be with driving the car. While you will be inside the car push 'w', or '↑' to gear up, 's', or '↓' to break, or move backward. While you're moving press 'a' or '←' to turn left, 'd' or '→' to turn right.\n"
+            ),
+            new Dialog (
+                "Congratulation's you finished all the tasks! Exam is passed. You could check your marks in the dairy! Bye!!!\n"
+            )
+        ]);
+        this.people["joe"] =  this.createPerson(130, 510, "joe", 51);
+        this.people["joe"].setDialogs([
+            new DialogSelectable(
+                [
+                    {
+                        correct: true,
+                        text: "Nice too meet you Joe, Monica said you can give me a key for the car?"
+                    },
+                    {
+                        correct: false,
+                        text: "Hi bro, said you Monica about the key for the car?"
+                    }
+                    
+                ],
+                [
+                    {
+                        correct: true,
+                        text: "Yes, here you are",
+                    },
+                    {
+                        correct: false,
+                        text: "I'm not understand..."
+                    }
+                ],
+                true
+            )
+        ]);
         
-        this.pipelineInstance = this.plugins.get('rexoutlinepipelineplugin');
+        this.pipelineInstance = this.plugins.get("rexoutlinepipelineplugin");
     
         this.createPlayer(200, 450);
 
@@ -250,10 +272,9 @@ class MainScene extends Phaser.Scene {
         
             orientation: 0,
         
-            background: this.rexUI.add.roundRectangle(0, 0, 2, 2, 20, COLOR_PRIMARY)
-                .setStrokeStyle(2, COLOR_LIGHT),
+            background: this.rexUI.add.roundRectangle(0, 0, 2, 2, 20, CONSTANTS.COLOR_PRIMARY)
+                .setStrokeStyle(2, CONSTANTS.COLOR_LIGHT),
 
-            //icon: this.rexUI.add.roundRectangle(0, 0, 2, 2, 20, COLOR_DARK),
             icon: this.matter.add.sprite(0, 0).play('teacher_talk').setScale(0.3, 0.3),
             iconMask: false,
             text: this.add.text(0, 0, "", {
@@ -302,9 +323,10 @@ class MainScene extends Phaser.Scene {
             }
         }).layout();
         this.helperText.hide();
-        this.openHelpDialog();
-        //this.helperText.start(this.helpTexts[0].text, 50);
+        this.openSpeakDialog("monica");
         
+        this.checkActionDistance(this.player.x, this.player.y);
+
         this.checkpoint1 = this.add.rectangle(230, 250, 120, 10);
         this.checkpoint2 = this.add.rectangle(380, 370, 10, 100);
         this.checkpoint3 = this.add.rectangle(470, 250, 80, 10);
@@ -361,13 +383,13 @@ class MainScene extends Phaser.Scene {
     }
 
     update() {
-        if(this.activeCar && !this.isHelpDialogActive) {
-            let keyPressed = this.keyPressed,
+        if(this.activeCar && !this.activeSpeaker) {
+            const keyPressed = this.keyPressed,
                 activeCarSprite = this.cars[this.activeCar],
                 currentAngle = activeCarSprite.angle;
             console.log("update car speed: ", activeCarSprite.speed);    
             if (keyPressed["KeyW"] || keyPressed["ArrowUp"]){
-                if(activeCarSprite.speed < maxCarSpeed) {
+                if(activeCarSprite.speed < CONSTANTS.maxCarSpeed) {
                     activeCarSprite.speed += 0.004;
                 }
                 if (!activeCarSprite.audio.engineUp.isPlaying)
@@ -378,7 +400,7 @@ class MainScene extends Phaser.Scene {
             }
             
             if (keyPressed["KeyS"] || keyPressed["ArrowDown"]){
-                if (activeCarSprite.speed > maxCarBackwardSpeed) {
+                if (activeCarSprite.speed > CONSTANTS.maxCarBackwardSpeed) {
                     activeCarSprite.speed -= 0.01;
                 }
             }
@@ -441,8 +463,8 @@ class MainScene extends Phaser.Scene {
         
             orientation: 0,
         
-            background: this.rexUI.add.roundRectangle(0, 0, 2, 2, 20, COLOR_PRIMARY)
-                .setStrokeStyle(2, COLOR_LIGHT),
+            background: this.rexUI.add.roundRectangle(0, 0, 2, 2, 20, CONSTANTS.COLOR_PRIMARY)
+                .setStrokeStyle(2, CONSTANTS.COLOR_LIGHT),
 
             icon: this.matter.add.sprite(0, 0).play('teacher_disappointed').setScale(0.3, 0.3),
             iconMask: false,
@@ -470,7 +492,7 @@ class MainScene extends Phaser.Scene {
         this.gameOverPopup.start(this.gameOverText, 50);
         this.gameOvered = true;
         this.gameOverPopup.setDepth(2);
-        this.overlay = this.add.rectangle(0, 0, 1600, 1200, COLOR_LIGHT, 0.4);
+        this.overlay = this.add.rectangle(0, 0, 1600, 1200, CONSTANTS.COLOR_LIGHT, 0.4);
         this.overlay.setDepth(1);
         document.addEventListener('click', e => window.location.reload());
         this.gameOverPopup.on('complete', () => {
@@ -499,7 +521,7 @@ class MainScene extends Phaser.Scene {
                 this.rexUI.add.label({
                     width: 30,
                     //background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, START_OPTIONS_COLOR).setStrokeStyle(2, START_OPTIONS_COLOR),
-                    icon: this.add.circle(0, 0, 10).setStrokeStyle(1, START_OPTIONS_COLOR),
+                    icon: this.add.circle(0, 0, 10).setStrokeStyle(1, CONSTANTS.COLOR_START_OPTIONS),
                     text: this.add.text(0, 0, "Start game", {
                         fontSize: 20,
                     }),
@@ -513,7 +535,7 @@ class MainScene extends Phaser.Scene {
                 this.rexUI.add.label({
                     width: 30,
                     //background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, START_OPTIONS_COLOR).setStrokeStyle(2, START_OPTIONS_COLOR),
-                    icon: this.add.circle(0, 0, 10).setStrokeStyle(1, START_OPTIONS_COLOR),
+                    icon: this.add.circle(0, 0, 10).setStrokeStyle(1, CONSTANTS.COLOR_START_OPTIONS),
                     text: this.add.text(0, 0, "Options", {
                         fontSize: 20,
                     }),
@@ -550,7 +572,7 @@ class MainScene extends Phaser.Scene {
         });
 
         this.startGameOptions.on("button.over", (btn, i, pointer, event) => {
-            btn.children[0].setFillStyle(START_OPTIONS_COLOR);
+            btn.children[0].setFillStyle(CONSTANTS.COLOR_START_OPTIONS);
             btn.children[1].setStroke("#fff", 1);
             document.body.style.cursor = "pointer";       
            
@@ -564,16 +586,14 @@ class MainScene extends Phaser.Scene {
                 this.startMenuSounds.itemSelect.stop();
             }
         });
-
-        document.addEventListener('keydown', this.startGame);
     }
 
     createCheckBox(text) {
         const checkbox = this.rexUI.add.label({
             width:280,
-            background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, COLOR_PRIMARY).setStrokeStyle(2, COLOR_LIGHT),
+            background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, CONSTANTS.COLOR_PRIMARY).setStrokeStyle(2, CONSTANTS.COLOR_LIGHT),
             icon: this.add.container(0, 0, [
-                this.add.circle(0, 0, 10).setStrokeStyle(1, COLOR_DARK),
+                this.add.circle(0, 0, 10).setStrokeStyle(1, CONSTANTS.COLOR_DARK),
                 this.make.image({
                 x:3,
                 y:-5, 
@@ -583,7 +603,7 @@ class MainScene extends Phaser.Scene {
                     y: 0.015
                 },
                 alpha:0
-            }).setTintFill(COLOR_DONE)]),
+            }).setTintFill(CONSTANTS.COLOR_DONE)]),
             text: this.add.text(0, 0, text, {
                 fontSize: 18,
                 wordWrap: { width: 240 }
@@ -605,15 +625,9 @@ class MainScene extends Phaser.Scene {
         keyPressed[code] = true;
 
         console.log(`Key code value: ${code}`);
-        if (this.isHelpDialogActive) {
-            if (keyPressed["Enter"] || keyPressed["KeyE"]) {
-                this.stepTeacherTalk();
-            }
-            return;
-        }
         this.checkTasksStatus(keyPressed);
 
-        if (!this.isHelpDialogActive) {
+        if (!this.activeSpeaker) {
             if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
                 this.player.setVelocityY(-1);
 
@@ -663,11 +677,9 @@ class MainScene extends Phaser.Scene {
     removeKeyActionPlayer(event) {
         const code = event.code,
             keyPressed = this.keyPressed;
-        //if (code === "Space") {
-        //    this.stopFireAction(); 
-        //}
+            
         console.log(code);
-        if (!this.isHelpDialogActive) {
+        if (!this.activeSpeaker) {
             if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
                 this.player.setVelocityY(0);
 
@@ -702,12 +714,6 @@ class MainScene extends Phaser.Scene {
 
             keyPressed[code] = true;
             console.log(`Key code value: ${code}`);
-            if (this.isHelpDialogActive) {
-                if (keyPressed["Enter"] || keyPressed["KeyE"]) {
-                    this.stepTeacherTalk();
-                }
-                return;
-            }
             if (this.firstPartTasksFinished && !this.allTasksAreComplete) {
                 const carPosX = activeCarSprite.body.position.x,
                     carPosY = activeCarSprite.body.position.y,
@@ -750,6 +756,7 @@ class MainScene extends Phaser.Scene {
         //if (code === "Space") {
         //    this.stopFireAction(); 
         //}
+        /*
         if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
             //this.car.thrust(1)
         }
@@ -761,28 +768,62 @@ class MainScene extends Phaser.Scene {
         }
         if (keyPressed["ArrowDown"] || keyPressed["KeyS"]){
             //this.car.setVelocityY(0);
-        }
+        }*/
         keyPressed[code] = false;
     }
 
+    pressKeyActionDialog(event) {
+        this.switchDialogPage(event);
+    }
+
+    removeKeyActionDialog(event) {
+
+    }
+
+    clickActionDialog(event) {
+        this.switchDialogPage(event);
+    }
+
+    switchDialogPage(event) {
+        const code = event.code;
+        console.log("switch dialog page");
+        console.log(code);
+
+        const activeDialog = this.people[this.activeSpeaker].getActiveDialog();
+        if (activeDialog instanceof Dialog) {
+            if (!activeDialog.user) {
+                this.hideSpeakDialog();
+            }
+        } else if (activeDialog instanceof DialogInjectable) {
+            this.createUserInputAnswer(activeDialog.input_text);
+        } else if (activeDialog instanceof DialogSelectable) {
+            this.createDialogSelectableAnswer()
+        }
+    }
+
     sitInACar(closestCar) {
-        this.destroyPlayer();
-        this.resetAllKeys();
-        this.setupCar(closestCar);
-        if(this.firstPartTasksFinished && !this.allTasksAreComplete) {
-            this.setCheckButton(this.tasksSecond.buttons[0].getElement("icon"));
-            this.tasksTracker[1][0] = true;
-            this.objectivesComplete.sitInACar = true;
-            if (this.isSecondPartTasksAreComplete()) {
-                this.completeSecondPartTasks();
-            };
+        const activeCarSprite = this.cars[closestCar]; 
+        if (!this.cars[closestCar].locked) {
+            this.destroyPlayer();
+            this.resetAllKeys();
+            this.setupCar(closestCar);
+            if (this.firstPartTasksFinished && !this.allTasksAreComplete) {
+                this.setCheckButton(this.tasksSecond.buttons[0].getElement("icon"));
+                this.tasksTracker[1][0] = true;
+                this.objectivesComplete.sitInACar = true;
+                if (this.isSecondPartTasksAreComplete()) {
+                    this.completeSecondPartTasks();
+                };
+            }
+        } else {
+            if (!activeCarSprite.audio.carLocked.isPlaying)
+                activeCarSprite.audio.carLocked.play();
         }
     }
 
     destroyPlayer() {
         console.log("destroy");
-        document.removeEventListener('keydown', this.pressKeyActionPlayer);
-        document.removeEventListener('keyup', this.removeKeyActionPlayer);
+        this.removePlayerListeners();
         this.player.destroy();
     }
 
@@ -790,8 +831,7 @@ class MainScene extends Phaser.Scene {
         this.cars[closestCar].audio.startEngine.play();
         this.cars[closestCar].audio.engineWork.play();
         this.activeCar = closestCar;
-        document.addEventListener('keydown', this.pressKeyActionCar);
-        document.addEventListener('keyup', this.removeKeyActionCar);
+        setupCarListeners();
     }
 
     leaveCar() {
@@ -807,8 +847,7 @@ class MainScene extends Phaser.Scene {
                 this.completeSecondPartTasks();
             };
         }
-        document.removeEventListener('keydown', this.pressKeyActionCar);
-        document.removeEventListener('keyup', this.removeKeyActionCar);
+        this.removeCarListeners();
     }
 
     createPlayer(posX, posY) {
@@ -816,8 +855,14 @@ class MainScene extends Phaser.Scene {
         this.player = this.matter.add.sprite(posX, posY, 'dudes');
         this.player.setFrictionAir(0.6);
         this.player.setMass(1);
-        document.addEventListener('keydown', this.pressKeyActionPlayer);
-        document.addEventListener('keyup', this.removeKeyActionPlayer);
+        this.setupPlayerListeners();
+    }
+
+    createPerson(posX, posY, name, frame) {
+        const person = new Person(this.matter.world, posX, posY, 'dudes', frame);
+        person.setFrictionAir(0.6);
+        person.setMass(1);
+        return person;
     }
 
     createCar(x, y, angle, friction, mass, key) {
@@ -837,7 +882,8 @@ class MainScene extends Phaser.Scene {
             engineUp: this.sound.add("engineUp"),
             rearMoveAudio: this.sound.add("carRearMove"),
             carCrash: this.sound.add("carCrash"),
-            fallIntoWater: this.sound.add("fallIntoWater")
+            fallIntoWater: this.sound.add("fallIntoWater"),
+            carLocked: this.sound.add("carLocked")
         }
 
         return car;
@@ -845,6 +891,7 @@ class MainScene extends Phaser.Scene {
 
     checkActionDistance(x, y) {
         let minDistance;
+        console.log("check action distance");
         Object.keys(this.cars).forEach((carKey) => {
             let closestCar;
             const car = this.cars[carKey],
@@ -854,9 +901,9 @@ class MainScene extends Phaser.Scene {
                 closestCar = carKey;
             }
             if(closestCar && minDistance < 30) {
-                if(!car.active) {
+                if(!car.highlighted) {
                     this.pipelineInstance.add(car, {thickness: 1});
-                    car.active = true;
+                    car.highlighted = true;
                 }
                 if(!this.firstPartTasksFinished) {
                     this.setCheckButton(this.tasksFirst.buttons[4].getElement("icon"));
@@ -866,61 +913,72 @@ class MainScene extends Phaser.Scene {
                     };
                 }
             } else {
-                car.active = false;
+                car.highlighted = false;
                 this.pipelineInstance.remove(car);
             }
-        });    
+        });
+        Object.keys(this.people).forEach((name) => {
+            let closest;
+            const person = this.people[name],
+                currentDistance = Phaser.Math.Distance.Between(x, y, person.x, person.y);
+            if (!minDistance || minDistance > currentDistance) {
+                minDistance = currentDistance;
+                closest = name;
+            }
+            if(closest && minDistance < 30) {
+                if(!person.highlighted) {
+                    this.pipelineInstance.add(person, {thickness: 1});
+                    person.highlighted = true;
+                }
+            } else {
+                person.highlighted = false;
+                this.pipelineInstance.remove(person);
+            }
+        });
     }
-
-    stepTeacherTalk() {
-        const activeTextIndex = this.getActiveTextIndex(),
-            activeText = this.helpTexts[activeTextIndex];
-        let nextText;
-        if (this.helpTexts[0].active) {
-            this.helpTexts[0].active = false;
-            this.helpTexts[1].active = true;
-            this.helperText.start(this.helpTexts[1].text, 50);
-            this.helperText.childrenMap.icon.anims.restart(false, true);
-            this.addCharacterPointer();
-        } else if (!activeText.last) {
-            nextText = this.helpTexts[activeTextIndex + 1];
-            activeText.active = false;
-            nextText.active = true;
-            this.helperText.start(nextText.text, 50);
-            this.helperText.childrenMap.icon.anims.restart(false, true);
-        } else {
-            this.hideHelpDialog();
-        }
-    }
-
-    openHelpDialog() {
-        const activeTextIndex = this.getActiveTextIndex();
+    
+    openSpeakDialog(characterName, isUserAction = false) {
+        const speaker = this.people[characterName];
+        const activeDialog = speaker.getActiveDialog();
         this.helperText.show();
-        this.helperText.start(this.helpTexts[activeTextIndex].text, 50);
-        this.overlay = this.add.rectangle(0, 0, 1600, 1200, COLOR_LIGHT, 0.4);
-        //this.matter.add.gameObject(this.overlay, {isSensor:true});
+        this.overlay = this.add.rectangle(0, 0, 1600, 1200, CONSTANTS.COLOR_LIGHT, 0.4);
         this.overlay.setDepth(1);
         this.helperText.childrenMap.icon.anims.restart(false, true);
-        this.isHelpDialogActive = true;
+        this.activeSpeaker = characterName;
+        if (isUserAction === false || !activeDialog.user) {
+            if (activeDialog.type === CONSTANTS.DIALOG_OPTIONS.CHOOSE_VARIANT) {
+
+            } else {
+                this.helperText.start(activeDialog.npc, 50);
+            }
+        } else {
+            if (activeDialog.type === CONSTANTS.DIALOG_OPTIONS.CHOOSE_VARIANT) {
+                 
+            } else {
+                this.helperText.start(activeDialog.user, 50);
+            }
+        }
+        this.setupDialogListeners();
     }
 
-    hideHelpDialog() {
-        const activeTextIndex = this.getActiveTextIndex();
-        this.helpTexts[activeTextIndex].active = false;
-        this.isHelpDialogActive = false;
-        this.helperText.hide();
+    hideSpeakDialog() {
+        //const activeTextIndex = this.getActiveTextIndex();
+        //this.helpTexts[activeTextIndex].active = false;
+        this.activeSpeaker = undefined;
         this.createHelpIcon();
         this.createSettingsIcon()
         this.overlay.destroy();
+        this.resetAllKeys();
         if (this.pointer) {
             this.pointer.destroy();
             this.pipelineInstance.remove(this.player);
         }
+        this.removeDialogListeners();
     }
 
     openSettingPage() {
-        this.isHelpDialogActive = true;
-        this.overlay = this.add.rectangle(0, 0, 1600, 1200, START_OPTIONS_BG, 1);
+        this.activeSpeaker = true;
+        this.overlay = this.add.rectangle(0, 0, 1600, 1200, CONSTANTS.COLOR_START_OPTIONS_BG, 1);
         this.overlay.setDepth(1);
 
         this.soundLabel = this.add.text(150, 200, 'sound volume:').setDepth(2);
@@ -931,9 +989,9 @@ class MainScene extends Phaser.Scene {
             height: 20,
             orientation: 'x',
 
-            track: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, COLOR_DARK),
-            indicator: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, COLOR_PRIMARY),
-            thumb: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, COLOR_PRIMARY),
+            track: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, CONSTANTS.COLOR_DARK),
+            indicator: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, CONSTANTS.COLOR_PRIMARY),
+            thumb: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, CONSTANTS.COLOR_PRIMARY),
 
             valuechangeCallback: (value) => {
                 localStorage.setItem("soundVolume", value);
@@ -954,8 +1012,6 @@ class MainScene extends Phaser.Scene {
             buttons: [
                 [this.rexUI.add.label({
                     width: 30,
-                    //background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, START_OPTIONS_COLOR).setStrokeStyle(2, START_OPTIONS_COLOR),
-                    //icon: this.add.circle(0, 0, 10).setStrokeStyle(1, START_OPTIONS_COLOR),
                     text: this.add.text(0, 0, "Back", {
                         fontSize: 20,
                         color: "#fff",
@@ -969,8 +1025,6 @@ class MainScene extends Phaser.Scene {
                 }),
                 this.rexUI.add.label({
                     width: 30,
-                    //background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, START_OPTIONS_COLOR).setStrokeStyle(2, START_OPTIONS_COLOR),
-                    //icon: this.add.circle(0, 0, 10).setStrokeStyle(1, START_OPTIONS_COLOR),
                     text: this.add.text(0, 0, "Set defaults", {
                         fontSize: 20,
                         color: "#fff",
@@ -1015,7 +1069,7 @@ class MainScene extends Phaser.Scene {
         });
 
         this.settingsPageActions.on("button.out", (btn, i, pointer, event) => {
-            btn.children[0].setStroke(START_OPTIONS_COLOR, 0);
+            btn.children[0].setStroke(CONSTANTS.COLOR_START_OPTIONS, 0);
             document.body.style.cursor = "auto";
             if (this.startMenuSounds.itemSelect.isPlaying) { 
                 this.startMenuSounds.itemSelect.stop();
@@ -1026,7 +1080,7 @@ class MainScene extends Phaser.Scene {
     }
 
     hideSettingPage() {
-        this.isHelpDialogActive = false;
+        this.activeSpeaker = false;
         this.soundLabel.destroy();
         this.soundVolume.destroy();
         this.overlay.destroy();
@@ -1035,32 +1089,25 @@ class MainScene extends Phaser.Scene {
     }
 
     resetSettings() {
-        localStorage.setItem("soundVolume", DEFAULT_VOLUME_VALUE);
-        this.soundVolumeValue = DEFAULT_VOLUME_VALUE;
-        this.soundVolume.setValue(DEFAULT_VOLUME_VALUE);
-        this.sound.setVolume(DEFAULT_VOLUME_VALUE); 
+        localStorage.setItem("soundVolume", CONSTANTS.DEFAULT_VOLUME_VALUE);
+        this.soundVolumeValue = CONSTANTS.DEFAULT_VOLUME_VALUE;
+        this.soundVolume.setValue(CONSTANTS.DEFAULT_VOLUME_VALUE);
+        this.sound.setVolume(CONSTANTS.DEFAULT_VOLUME_VALUE); 
     }
 
     addCharacterPointer() {
-        this.pointer = this.add.polygon(50, 100, [this.player.x + 18, this.player.y, this.player.x + 50, this.player.y - 180, this.player.x + 150, this.player.y - 200], COLOR_PRIMARY);
-        this.pointer.setStrokeStyle(2, COLOR_LIGHT);
+        this.pointer = this.add.polygon(50, 100, [this.player.x + 18, this.player.y, this.player.x + 50, this.player.y - 180, this.player.x + 150, this.player.y - 200], CONSTANTS.COLOR_PRIMARY);
+        this.pointer.setStrokeStyle(2, CONSTANTS.COLOR_LIGHT);
         this.pointer.originX = 0;
         this.pointer.originY = 0;
         this.pointer.setDepth(2);
         this.pipelineInstance.add(this.player, {thickness: 1});
     }
 
-    userClick(e) {
-        if (this.isHelpDialogActive) {
-            this.stepTeacherTalk();
-            return;
-        }
-    }
-
     createHelpIcon() {
         const iconButton = this.rexUI.add.label({
             width: 30,
-            background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, COLOR_PRIMARY).setStrokeStyle(2, COLOR_LIGHT),
+            background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, CONSTANTS.COLOR_PRIMARY).setStrokeStyle(2, CONSTANTS.COLOR_LIGHT),
             //icon: this.add.circle(0, 0, 10).setStrokeStyle(1, COLOR_DARK),
             text: this.add.text(0, 0, "?", {
                 fontSize: 20,
@@ -1100,18 +1147,18 @@ class MainScene extends Phaser.Scene {
                 } else {
                     this.helpTexts[4].active = true;
                 }
-                this.openHelpDialog();
+                this.openSpeakDialog("monica");
             }
         });
 
         this.helpIcon.on("button.over", (btn, i, pointer, event) => {
-            btn.backgroundChildren[0].setFillStyle(COLOR_LIGHT);
+            btn.backgroundChildren[0].setFillStyle(CONSTANTS.COLOR_LIGHT);
             if (!this.helperText.visible)
                 document.body.style.cursor = "pointer";
         });
 
         this.helpIcon.on("button.out", (btn, i, pointer, event) => {
-            btn.backgroundChildren[0].setFillStyle(COLOR_PRIMARY);
+            btn.backgroundChildren[0].setFillStyle(CONSTANTS.COLOR_PRIMARY);
             document.body.style.cursor = "auto";
         });
     }
@@ -1119,7 +1166,7 @@ class MainScene extends Phaser.Scene {
     createSettingsIcon() {
         const iconButton = this.rexUI.add.label({
             width: 30,
-            background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, COLOR_PRIMARY).setStrokeStyle(2, COLOR_LIGHT),
+            background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, CONSTANTS.COLOR_PRIMARY).setStrokeStyle(2, CONSTANTS.COLOR_LIGHT),
             //icon: this.add.circle(0, 0, 10).setStrokeStyle(1, COLOR_DARK),
             text: this.add.text(0, 0, "⚙", {
                 fontSize: 20,
@@ -1155,13 +1202,13 @@ class MainScene extends Phaser.Scene {
         });
 
         this.settingsIcon.on("button.over", (btn, i, pointer, event) => {
-            btn.backgroundChildren[0].setFillStyle(COLOR_LIGHT);
+            btn.backgroundChildren[0].setFillStyle(CONSTANTS.COLOR_LIGHT);
             if (!this.helperText.visible)
                 document.body.style.cursor = "pointer";
         });
 
         this.settingsIcon.on("button.out", (btn, i, pointer, event) => {
-            btn.backgroundChildren[0].setFillStyle(COLOR_PRIMARY);
+            btn.backgroundChildren[0].setFillStyle(CONSTANTS.COLOR_PRIMARY);
             document.body.style.cursor = "auto";
         });
     }
@@ -1215,7 +1262,7 @@ class MainScene extends Phaser.Scene {
         this.firstPartTasksFinished = true; 
         this.tasksFirst.destroy();
         this.helpTexts[2].active = true;
-        this.openHelpDialog();
+        this.openSpeakDialog("monica");
         this.tasksSecond = this.rexUI.add.fixWidthButtons({
             x: 640,
             y: 480,
@@ -1241,7 +1288,7 @@ class MainScene extends Phaser.Scene {
     completeSecondPartTasks() {
         this.allTasksAreComplete = true;
         this.helpTexts[4].active = true;
-        this.openHelpDialog();
+        this.openSpeakDialog("monica");
         this.tasksSecond.destroy();
     }
 
@@ -1270,10 +1317,6 @@ class MainScene extends Phaser.Scene {
         }
     }
 
-    getActiveTextIndex() {
-        return this.helpTexts.findIndex(item => item.active === true);
-    }
-
     isAllCheckpointsReached() {
         return this.checkpointsReached.filter(item => item === true).length === 3;
     }
@@ -1283,8 +1326,40 @@ class MainScene extends Phaser.Scene {
     }
 
     setCheckButton(container) {
-        container.first.setFillStyle(COLOR_LIGHT);
+        container.first.setFillStyle(CONSTANTS.COLOR_LIGHT);
         container.next.setAlpha(1);
+    }
+
+    setupPlayerListeners() {
+        document.addEventListener('keydown', this.pressKeyActionPlayer);
+        document.addEventListener('keyup', this.removeKeyActionPlayer);
+    }
+
+    removePlayerListeners() {
+        document.removeEventListener('keydown', this.pressKeyActionPlayer);
+        document.removeEventListener('keyup', this.removeKeyActionPlayer);
+    }
+
+    setupCarListeners() {
+        document.addEventListener('keydown', this.pressKeyActionCar);
+        document.addEventListener('keyup', this.removeKeyActionCar);
+    }
+
+    removeCarListeners() {
+        document.removeEventListener('keydown', this.pressKeyActionCar);
+        document.removeEventListener('keyup', this.removeKeyActionCar);
+    }
+
+    setupDialogListeners() {
+        document.addEventListener('keydown', this.pressKeyActionDialog);
+        document.addEventListener('keyup', this.removeKeyActionDialog);
+        document.addEventListener("click tap", this.clickActionDialog);
+    }
+
+    removeDialogListeners() {
+        document.removeEventListener('keydown', this.pressKeyActionDialog);
+        document.removeEventListener('keyup', this.removeKeyActionDialog);
+        document.addEventListener("click tap", this.clickActionDialog);
     }
 }
 

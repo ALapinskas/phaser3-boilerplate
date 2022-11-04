@@ -329,8 +329,8 @@
                     },
                  "visible":true,
                  "width":82.09375,
-                 "x":321,
-                 "y":252.216817159234
+                 "x":92.0173372587504,
+                 "y":443.035702776942
                 }, 
                 {
                  "class":"",
@@ -349,7 +349,26 @@
                  "visible":true,
                  "width":105,
                  "x":324,
-                 "y":61.2851924544761
+                 "y":60
+                }, 
+                {
+                 "class":"",
+                 "height":17,
+                 "id":16,
+                 "name":"",
+                 "rotation":0,
+                 "text":
+                    {
+                     "bold":true,
+                     "color":"#3d3846",
+                     "fontfamily":"Sans",
+                     "text":"Bakery",
+                     "wrap":true
+                    },
+                 "visible":true,
+                 "width":82.0938,
+                 "x":330,
+                 "y":251
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -358,7 +377,7 @@
          "y":0
         }],
  "nextlayerid":19,
- "nextobjectid":16,
+ "nextobjectid":17,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.9.2",
