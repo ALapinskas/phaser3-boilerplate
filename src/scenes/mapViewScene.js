@@ -1,10 +1,12 @@
-import CONSTANTS from "./constants";
-import { Person, Dialog, DialogInjectable, DialogSelectable, SelectableText } from "./person";
+import CONSTANTS from "../constants";
+import { Person, Dialog, DialogInjectable, DialogSelectable, SelectableText } from "../gameObjects/person";
 
-class MainScene extends Phaser.Scene {
+export class MapViewScene extends Phaser.Scene {
+    constructor() {
+        super({key: CONSTANTS.SCENES.MAP_VIEW_SCENE})
+    }
 
     preload() {
-        const soundVolumeValue = localStorage.getItem('soundVolume');
         this.keyPressed = { ArrowUp: false, KeyW: false, ArrowLeft: false, KeyA: false, ArrowRight: false, KeyD: false, ArrowDown: false, KeyS: false,
             Enter:false, KeyE:false };
         this.activeCar = undefined;
@@ -14,6 +16,7 @@ class MainScene extends Phaser.Scene {
         this.playerName = undefined;
         this.cars = {};
         this.people = {};
+        this.userInputText = { isActive: false };
         this.objectivesComplete = { sitInACar: false, driveAround: false, leaveCar: false };
         this.load.image({
             key: 'tiles',
@@ -28,7 +31,7 @@ class MainScene extends Phaser.Scene {
         this.load.spritesheet('teacher', 'images/teacher_sprite.png', { frameWidth: 342, frameHeight: 523 });
 
         this.load.plugin('rexoutlinepipelineplugin', './lib/phaser3-rex-plugins/dist/rexoutlinepipelineplugin.min.js', true);
-
+        this.load.plugin('rexcanvasinputplugin', './lib/phaser3-rex-plugins/dist/canvasinput-plugin.min.js', true);
         this.load.scenePlugin('rexuiplugin', './lib/phaser3-rex-plugins/dist/rexuiplugin.js', 'rexUI', 'rexUI');
 
         this.load.audio('startEngine1', './assets/engine_start.mp3');
@@ -40,8 +43,6 @@ class MainScene extends Phaser.Scene {
         this.load.audio('carLocked', '/assets/car_locked.mp3');
         this.load.audio('fallIntoWater', '/assets/large-falls-into-water.mp3');
         this.load.audio('startMenuSelect', '/assets/start_menu_select.mp3');
-        this.soundVolumeValue = soundVolumeValue ? soundVolumeValue : CONSTANTS.DEFAULT_VOLUME_VALUE;
-        this.sound.setVolume(this.soundVolumeValue); 
 
         this.gameOverText = "Oh no!!! You sinked. Now you will have to start from the beginning!";
 
@@ -117,18 +118,8 @@ class MainScene extends Phaser.Scene {
             key: 'standRight',
             frames: [ { key: 'dudes', frame: 3 } ]
         });
-
-        this.startMenuSounds = {
-            itemSelect: this.sound.add("startMenuSelect")
-        }
-        //dudes.push(this.add.existing(new Dude(this, 240, 290, 'walk', 'west', 10)));
-        //dudes.push(this.add.existing(new Dude(this, 100, 380, 'walk', 'northWest', 20)));
-        //dudes.push(this.add.existing(new Dude(this, 620, 140, 'walk', 'south', 30)));
-        if (this.gameStarted) {
-            this.buildMap();
-        } else {
-            this.renderBanner();
-        }
+        
+        this.buildMap();
     }
 
     buildMap () {
@@ -500,94 +491,6 @@ class MainScene extends Phaser.Scene {
         });
     }
 
-    startGame() {
-        console.warn('staring the game');
-        document.removeEventListener('keydown', this.startGame);
-        this.gameStarted = true;
-        this.startGameTitle.destroy();
-        this.startGameOptions.destroy();
-        this.buildMap(); 
-    }
-
-    renderBanner() {
-        this.startGame = this.startGame.bind(this);
-        this.startGameTitle = this.add.text(260, 260, "Interactive school", {
-            fontSize: 32,
-        });
-        this.startGameOptions = this.rexUI.add.fixWidthButtons({
-            x: 340,
-            y: 350,
-            buttons: [
-                this.rexUI.add.label({
-                    width: 30,
-                    //background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, START_OPTIONS_COLOR).setStrokeStyle(2, START_OPTIONS_COLOR),
-                    icon: this.add.circle(0, 0, 10).setStrokeStyle(1, CONSTANTS.COLOR_START_OPTIONS),
-                    text: this.add.text(0, 0, "Start game", {
-                        fontSize: 20,
-                    }),
-                    space: {
-                        left: 10, right: 10, top: 10, bottom: 10,
-                        icon: 10
-                    },
-                    align: 'left',
-                    name: "play"
-                }),
-                this.rexUI.add.label({
-                    width: 30,
-                    //background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, START_OPTIONS_COLOR).setStrokeStyle(2, START_OPTIONS_COLOR),
-                    icon: this.add.circle(0, 0, 10).setStrokeStyle(1, CONSTANTS.COLOR_START_OPTIONS),
-                    text: this.add.text(0, 0, "Options", {
-                        fontSize: 20,
-                    }),
-                    space: {
-                        left: 10, right: 10, top: 10, bottom: 10,
-                        icon: 10
-                    },
-                    align: 'left',
-                    name: "options"
-                })
-                // ...
-            ],
-            // rtl: false,
-            align: 0,
-            click: {
-                mode: 'pointerup',
-                clickInterval: 100
-            },
-            space: {
-                line: 3,
-            }
-        }).layout();
-
-        this.startGameOptions.on("button.click", (btn, i, pointer, event) => {
-            if (!this.startMenuSounds.itemSelect.isPlaying) { 
-                this.startMenuSounds.itemSelect.play();
-            }
-            if (btn.name === "play") {
-                this.startGame();
-                document.body.style.cursor = "auto";
-            } else {
-                this.openSettingPage();
-            }
-        });
-
-        this.startGameOptions.on("button.over", (btn, i, pointer, event) => {
-            btn.children[0].setFillStyle(CONSTANTS.COLOR_START_OPTIONS);
-            btn.children[1].setStroke("#fff", 1);
-            document.body.style.cursor = "pointer";       
-           
-        });
-
-        this.startGameOptions.on("button.out", (btn, i, pointer, event) => {
-            btn.children[0].setFillStyle();
-            btn.children[1].setStroke("#fff", 0);
-            document.body.style.cursor = "auto";
-            if (this.startMenuSounds.itemSelect.isPlaying) { 
-                this.startMenuSounds.itemSelect.stop();
-            }
-        });
-    }
-
     createCheckBox(text) {
         const checkbox = this.rexUI.add.label({
             width:280,
@@ -773,7 +676,14 @@ class MainScene extends Phaser.Scene {
     }
 
     pressKeyActionDialog(event) {
-        this.switchDialogPage(event);
+        if (this.userInputText.isActive) {
+            const code = event.code;
+            console.log("press key:");
+            console.log(code);
+            //this.userInputText.pressKey(code);
+        } else {
+            this.switchDialogPage(event);
+        }
     }
 
     removeKeyActionDialog(event) {
@@ -781,23 +691,10 @@ class MainScene extends Phaser.Scene {
     }
 
     clickActionDialog(event) {
-        this.switchDialogPage(event);
-    }
-
-    switchDialogPage(event) {
-        const code = event.code;
-        console.log("switch dialog page");
-        console.log(code);
-
-        const activeDialog = this.people[this.activeSpeaker].getActiveDialog();
-        if (activeDialog instanceof Dialog) {
-            if (!activeDialog.user) {
-                this.hideSpeakDialog();
-            }
-        } else if (activeDialog instanceof DialogInjectable) {
-            this.createUserInputAnswer(activeDialog.input_text);
-        } else if (activeDialog instanceof DialogSelectable) {
-            this.createDialogSelectableAnswer()
+        if (this.userInputText.isActive) {
+        
+        } else {
+            this.switchDialogPage(event);
         }
     }
 
@@ -938,27 +835,93 @@ class MainScene extends Phaser.Scene {
     }
     
     openSpeakDialog(characterName, isUserAction = false) {
-        const speaker = this.people[characterName];
-        const activeDialog = speaker.getActiveDialog();
+        this.activeSpeaker = characterName;
+        this.removeCarListeners();
+        this.removePlayerListeners();
+        const activeDialog = this.getActiveDialog();
         this.helperText.show();
         this.overlay = this.add.rectangle(0, 0, 1600, 1200, CONSTANTS.COLOR_LIGHT, 0.4);
         this.overlay.setDepth(1);
         this.helperText.childrenMap.icon.anims.restart(false, true);
-        this.activeSpeaker = characterName;
         if (isUserAction === false || !activeDialog.user) {
-            if (activeDialog.type === CONSTANTS.DIALOG_OPTIONS.CHOOSE_VARIANT) {
+            if (activeDialog instanceof DialogSelectable) {
 
             } else {
                 this.helperText.start(activeDialog.npc, 50);
             }
         } else {
-            if (activeDialog.type === CONSTANTS.DIALOG_OPTIONS.CHOOSE_VARIANT) {
+            if (activeDialog instanceof DialogSelectable) {
                  
             } else {
                 this.helperText.start(activeDialog.user, 50);
             }
         }
         this.setupDialogListeners();
+    }
+
+    switchDialogPage(event) {
+        const code = event.code;
+        console.log("switch dialog page");
+        console.log(code);
+
+        const activeDialog = this.getActiveDialog();
+        
+        if (activeDialog instanceof DialogInjectable) {
+            this.createUserInputAnswer(activeDialog.input_text);
+        } else if (activeDialog instanceof DialogSelectable) {
+            this.createDialogSelectableAnswer()
+        } else if (activeDialog instanceof Dialog) {
+            if (!activeDialog.user) {
+                this.hideSpeakDialog();
+            }
+        }
+    }
+
+    createUserInputAnswer(input_text) {
+        const activeDialog = this.getActiveDialog();
+        this.userInput = this.rexUI.add.canvasInput(300, 200, 200, 50, 
+            { 
+                background: {
+                    stroke: 'white',
+                    cornerRadius: 20,
+                },
+                onOpen(textObject) {
+                    textObject.setBackgroundStroke('red')
+                },
+
+                onClose(textObject) {
+                    textObject.setBackgroundStroke('white')
+                },
+
+                onAddChar(child) {
+                    child
+                        .setAngle((Math.random() - 0.5) * 30)
+                        .modifyStyle({ fontSize: Phaser.Math.Between(20, 30) })
+                },
+
+                onCursorOut(child, cursorIndex, textObject) {
+                    child.modifyStyle({
+                        color: 'white',
+                        backgroundColor: null
+                    })
+                },
+
+                onCursorIn(child, cursorIndex, textObject) {
+                    child.modifyStyle({
+                        color: 'black',
+                        backgroundColor: 'white'
+                    })
+                }
+            }
+        );
+        this.userInput.setDepth(4);
+        this.helperText.childrenMap.icon.destroy();
+        this.helperText.start(activeDialog.user + this.userInput, 50);
+        this.userInputText.isActive = true;
+    }
+
+    userInputTyping() {
+        this.helperText.start(activeDialog.user + this.userInputText.getText(), 50);
     }
 
     hideSpeakDialog() {
@@ -974,125 +937,6 @@ class MainScene extends Phaser.Scene {
             this.pipelineInstance.remove(this.player);
         }
         this.removeDialogListeners();
-    }
-
-    openSettingPage() {
-        this.activeSpeaker = true;
-        this.overlay = this.add.rectangle(0, 0, 1600, 1200, CONSTANTS.COLOR_START_OPTIONS_BG, 1);
-        this.overlay.setDepth(1);
-
-        this.soundLabel = this.add.text(150, 200, 'sound volume:').setDepth(2);
-        this.soundVolume = this.rexUI.add.slider({
-            x: 380,
-            y: 210,
-            width: 200,
-            height: 20,
-            orientation: 'x',
-
-            track: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, CONSTANTS.COLOR_DARK),
-            indicator: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, CONSTANTS.COLOR_PRIMARY),
-            thumb: this.rexUI.add.roundRectangle(0, 0, 0, 0, 10, CONSTANTS.COLOR_PRIMARY),
-
-            valuechangeCallback: (value) => {
-                localStorage.setItem("soundVolume", value);
-                this.soundVolumeValue = value;
-                this.sound.setVolume(value); 
-            },
-            space: {
-                top: 4,
-                bottom: 4
-            },
-            input: 'click',
-            value: this.soundVolumeValue
-        }).layout().setDepth(2);
-
-        this.settingsPageActions = this.rexUI.add.gridButtons({
-            x: 340,
-            y: 350,
-            buttons: [
-                [this.rexUI.add.label({
-                    width: 30,
-                    text: this.add.text(0, 0, "Back", {
-                        fontSize: 20,
-                        color: "#fff",
-                    }),
-                    space: {
-                        left: 10, right: 10, top: 10, bottom: 10,
-                        icon: 10
-                    },
-                    align: 'left',
-                    name: "back"
-                }),
-                this.rexUI.add.label({
-                    width: 30,
-                    text: this.add.text(0, 0, "Set defaults", {
-                        fontSize: 20,
-                        color: "#fff",
-                    }),
-                    space: {
-                        left: 10, right: 10, top: 10, bottom: 10,
-                        icon: 10
-                    },
-                    align: 'left',
-                    name: "defaults"
-                })]
-                // ...
-            ],
-            // rtl: false,
-            align: 0,
-            click: {
-                mode: 'pointerup',
-                clickInterval: 100
-            },
-            space: {
-                line: 3,
-            }
-        }).layout();
-
-        this.settingsPageActions.setDepth(2);
-
-        this.settingsPageActions.on("button.click", (btn, i, pointer, event) => {
-            if (!this.startMenuSounds.itemSelect.isPlaying) { 
-                this.startMenuSounds.itemSelect.play();
-            }
-            if (btn.name === "back") {
-                this.hideSettingPage();
-                document.body.style.cursor = "auto";
-            } else if (btn.name === "defaults") {
-                this.resetSettings();
-            }
-        });
-
-        this.settingsPageActions.on("button.over", (btn, i, pointer, event) => {
-            btn.children[0].setStroke("#fff", 1);
-            document.body.style.cursor = "pointer";
-        });
-
-        this.settingsPageActions.on("button.out", (btn, i, pointer, event) => {
-            btn.children[0].setStroke(CONSTANTS.COLOR_START_OPTIONS, 0);
-            document.body.style.cursor = "auto";
-            if (this.startMenuSounds.itemSelect.isPlaying) { 
-                this.startMenuSounds.itemSelect.stop();
-            }
-        });
-        
-        console.log("open settings page 2");
-    }
-
-    hideSettingPage() {
-        this.activeSpeaker = false;
-        this.soundLabel.destroy();
-        this.soundVolume.destroy();
-        this.overlay.destroy();
-        this.settingsPageActions.destroy();
-        console.log("hide settings page");
-    }
-
-    resetSettings() {
-        localStorage.setItem("soundVolume", CONSTANTS.DEFAULT_VOLUME_VALUE);
-        this.soundVolumeValue = CONSTANTS.DEFAULT_VOLUME_VALUE;
-        this.soundVolume.setValue(CONSTANTS.DEFAULT_VOLUME_VALUE);
-        this.sound.setVolume(CONSTANTS.DEFAULT_VOLUME_VALUE); 
     }
 
     addCharacterPointer() {
@@ -1325,6 +1169,10 @@ class MainScene extends Phaser.Scene {
         Object.keys(this.keyPressed).forEach((key) => this.keyPressed[key] = false);
     }
 
+    getActiveDialog() {
+        return this.people[this.activeSpeaker].getActiveDialog();
+    }
+
     setCheckButton(container) {
         container.first.setFillStyle(CONSTANTS.COLOR_LIGHT);
         container.next.setAlpha(1);
@@ -1361,70 +1209,4 @@ class MainScene extends Phaser.Scene {
         document.removeEventListener('keyup', this.removeKeyActionDialog);
         document.addEventListener("click tap", this.clickActionDialog);
     }
-}
-
-var config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    scene: MainScene,
-    physics: {
-        default: 'matter',
-        matter: {
-            debug: false,
-            gravity: {
-                x: 0,
-                y: 0
-            }
-        }
-    }
-};
-
-var directions = {
-    west: { offset: 0, x: -2, y: 0, opposite: 'east' },
-    northWest: { offset: 32, x: -2, y: -1, opposite: 'southEast' },
-    north: { offset: 64, x: 0, y: -2, opposite: 'south' },
-    northEast: { offset: 96, x: 2, y: -1, opposite: 'southWest' },
-    east: { offset: 128, x: 2, y: 0, opposite: 'west' },
-    southEast: { offset: 160, x: 2, y: 1, opposite: 'northWest' },
-    south: { offset: 192, x: 0, y: 2, opposite: 'north' },
-    southWest: { offset: 224, x: -2, y: 1, opposite: 'northEast' }
-};
-
-var anims = {
-    idle: {
-        startFrame: 0,
-        endFrame: 4,
-        speed: 0.2
-    },
-    walk: {
-        startFrame: 4,
-        endFrame: 12,
-        speed: 0.15
-    },
-    attack: {
-        startFrame: 12,
-        endFrame: 20,
-        speed: 0.11
-    },
-    die: {
-        startFrame: 20,
-        endFrame: 28,
-        speed: 0.2
-    },
-    shoot: {
-        startFrame: 28,
-        endFrame: 32,
-        speed: 0.1
-    }
-};
-
-document.onreadystatechange = function () {
-    if (document.readyState == "interactive") {
-        var game = new Phaser.Game(config);
-    }
-}
-
-function reachBuilding() {
-    console.log('11111');
 }
