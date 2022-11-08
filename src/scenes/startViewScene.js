@@ -2,7 +2,7 @@ import CONSTANTS from "../constants";
 
 export class StartViewScene extends Phaser.Scene {
     constructor() {
-        super({key: CONSTANTS.SCENES.START_VIEW_SCENE});
+        super(CONSTANTS.SCENES.START_VIEW_SCENE);
     }
 
     preload() {
@@ -18,7 +18,7 @@ export class StartViewScene extends Phaser.Scene {
             itemSelect: this.sound.add("startMenuSelect")
         }
         this.startGame = this.startGame.bind(this);
-        this.startGameTitle = this.add.text(260, 260, "Interactive school", {
+        this.startGameTitle = this.add.text(260, 260, "Top-down game boilerplate", {
             fontSize: 32,
         });
         this.startGameButtons = this.rexUI.add.fixWidthButtons({
@@ -67,9 +67,8 @@ export class StartViewScene extends Phaser.Scene {
         }).layout();
 
         this.startGameButtons.on("button.click", (btn, i, pointer, event) => {
-            if (!this.startMenuSounds.itemSelect.isPlaying) { 
+            if (!this.startMenuSounds.itemSelect.isPlaying)
                 this.startMenuSounds.itemSelect.play();
-            }
             if (btn.name === "play") {
                 this.startGame();
                 document.body.style.cursor = "auto";

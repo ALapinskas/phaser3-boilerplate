@@ -2,11 +2,13 @@ import CONSTANTS from "../constants";
 
 export class OptionsViewScene extends Phaser.Scene {
     constructor() {
-        super({key: CONSTANTS.SCENES.OPTIONS_VIEW_SCENE});
+        super(CONSTANTS.SCENES.OPTIONS_VIEW_SCENE);
     }
 
     init(cameFrom) {
         this.cameFrom = cameFrom;
+
+        console.log("init options view scene!!");
     }
 
     preload() {
@@ -17,7 +19,6 @@ export class OptionsViewScene extends Phaser.Scene {
         this.startMenuSounds = {
             itemSelect: this.sound.add("startMenuSelect")
         }
-        console.log("its options view scene!!");
         this.activeSpeaker = true;
         this.overlay = this.add.rectangle(0, 0, 1600, 1200, CONSTANTS.COLOR_START_OPTIONS_BG, 1);
         this.overlay.setDepth(1);
@@ -78,7 +79,6 @@ export class OptionsViewScene extends Phaser.Scene {
                 })]
                 // ...
             ],
-            // rtl: false,
             align: 0,
             click: {
                 mode: 'pointerup',
@@ -124,6 +124,9 @@ export class OptionsViewScene extends Phaser.Scene {
     }
 
     hideSettingPage() {
-        this.scene.start(this.cameFrom);
+        this.scene.stop(CONSTANTS.SCENES.OPTIONS_VIEW_SCENE);
+        this.scene.run(this.cameFrom);
+        if (this.cameFrom === CONSTANTS.SCENES.CONTROLS_VIEW_SCENE)
+            this.scene.run(CONSTANTS.SCENES.MAP_VIEW_SCENE);
     }
 }
