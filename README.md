@@ -1,42 +1,39 @@
-# drivers-school
-Driving school game
+# phaser3 boilerplate
+phaser3 game boilerplate
+
+# Included
+1. Main menu
+    - menu items sounds
+    
+2. Options scene
+    - sound volume control
+
+3. Map scene
+    - map from a tilemaps
+    - basic characters
+    - basic map objects
+    - text objects
+    - main player navigation
+    - main player animations
+    - boundaries
+    - collisions listener
+   
+
+4. Controls scene
+    - options button
 
 # run
 
 npm i
-npm start
-visit localhost:8080
+npm run copy-libs
+!!! on Windows you will have manually copy "phaser" and "phaser3-rex-plugins" modules to the ./dist/lib folder
 
-# Finished
-0.0.1:
-    Refactor objectives completion
-    Add finish all tasks event
-    Add car drive learning tasks
-0.0.2:
-    Add start menu screen
-0.0.3:
-    Fixed driving calculations
-    Added backward moving sound
-    Added crush car sound
-    Added car gear up sound
-    Added water collisions
-0.0.4
-    Added water interaction, the game ends, and ask for restart
-    Reduced max car speed
-    Added talking overlay
-0.0.41
-    Added checkbox sign
-0.0.42
-    Added js minificator
-    Fixed npm tasks
-0.0.5
-    Added start settings options buttons
-    Added start options buttons animations
-    Added game sound level setting
-    Added settings saving/retrieving via localStorage
-0.0.51
-    Added Building names
-# Road map
-1. Add car sink animation
-2. Fix parking car calculations
-3. Add sound for checkbox switch
+npm run build-dev
+npm start
+visit localhost:8088
+
+# watch
+npm run watch
+
+# items used
+Kenney sity-2d and racingpack free game assets
