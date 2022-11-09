@@ -18,7 +18,7 @@ export class StartViewScene extends Phaser.Scene {
             itemSelect: this.sound.add("startMenuSelect")
         }
         this.startGame = this.startGame.bind(this);
-        this.startGameTitle = this.add.text(260, 260, "Top-down game boilerplate", {
+        this.startGameTitle = this.add.text(260, 260, "Game title", {
             fontSize: 32,
         });
         this.startGameButtons = this.rexUI.add.fixWidthButtons({

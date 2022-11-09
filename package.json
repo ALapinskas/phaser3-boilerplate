@@ -1,7 +1,7 @@
 {
-  "name": "phaser-game",
+  "name": "phaser3-boilerplate",
   "version": "0.0.1",
-  "description": "",
+  "description": "phaser3 game boilerplate",
   "main": "./dist/main.min.js",
   "watch": {
     "build-dev": "./src/**/*.js"

@@ -12,8 +12,8 @@ const config = {
     scene: StartViewScene,
     scale: {
         //mode: Phaser.Scale.ENVELOP,
-        mode: Phaser.Scale.WIDTH_CONTROLS_HEIGHT
-        //autoCenter: Phaser.Scale.CENTER_BOTH,
+        mode: Phaser.Scale.HEIGHT_CONTROLS_WIDTH,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     physics: {
         default: 'matter',

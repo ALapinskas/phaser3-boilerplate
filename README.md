@@ -1,5 +1,5 @@
 # phaser3 boilerplate
-phaser3 game boilerplate for top-down action/rpg game
+phaser3 game boilerplate
 
 # Included
 1. Main menu
@@ -16,6 +16,7 @@ phaser3 game boilerplate for top-down action/rpg game
     - main player navigation
     - main player animations
     - boundaries
+    - collisions listener
    
 
 4. Controls scene

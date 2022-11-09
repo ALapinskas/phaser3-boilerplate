@@ -6,7 +6,6 @@ export class ControlsViewScene extends Phaser.Scene {
     }
 
     init() {
-        console.log("controls view scene init");
     }
 
     preload() {
@@ -20,55 +19,7 @@ export class ControlsViewScene extends Phaser.Scene {
         }
         this.createSettingsIcon();
     }
-
-    createHelpIcon() {
-        const iconButton = this.rexUI.add.label({
-            width: 30,
-            background: this.rexUI.add.roundRectangle(0, 0, 0, 0, 20, CONSTANTS.COLOR_PRIMARY).setStrokeStyle(2, CONSTANTS.COLOR_LIGHT),
-            //icon: this.add.circle(0, 0, 10).setStrokeStyle(1, COLOR_DARK),
-            text: this.add.text(0, 0, "?", {
-                fontSize: 20,
-            }),
-            space: {
-                left: 10, right: 10, top: 10, bottom: 10,
-                icon: 10
-            },
-            align: 'left',
-            name: "icon"
-        });
-
-        this.helpIcon = this.rexUI.add.fixWidthButtons({
-            x: 40,
-            y: 560,
-            buttons: [
-                iconButton,
-                // ...
-            ],
-            // rtl: false,
-            align: 0,
-            click: {
-                mode: 'pointerup',
-                clickInterval: 100
-            },
-            space: {
-                line: 3,
-            }
-        }).layout();
-
-        this.helpIcon.on("button.click", (btn, i, pointer, event) => {
-            
-        });
-
-        this.helpIcon.on("button.over", (btn, i, pointer, event) => {
-            btn.backgroundChildren[0].setFillStyle(CONSTANTS.COLOR_LIGHT);
-        });
-
-        this.helpIcon.on("button.out", (btn, i, pointer, event) => {
-            btn.backgroundChildren[0].setFillStyle(CONSTANTS.COLOR_PRIMARY);
-            document.body.style.cursor = "auto";
-        });
-    }
-
+    
     createSettingsIcon() {
         const iconButton = this.rexUI.add.label({
             width: 30,

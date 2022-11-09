@@ -7,8 +7,6 @@ export class OptionsViewScene extends Phaser.Scene {
 
     init(cameFrom) {
         this.cameFrom = cameFrom;
-
-        console.log("init options view scene!!");
     }
 
     preload() {

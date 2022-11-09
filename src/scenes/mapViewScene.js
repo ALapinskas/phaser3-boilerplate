@@ -6,21 +6,14 @@ export class MapViewScene extends Phaser.Scene {
     }
 
     init() {
-        console.log("map view scene");
     }
 
     preload() {
         this.keyPressed = { ArrowUp: false, KeyW: false, ArrowLeft: false, KeyA: false, ArrowRight: false, KeyD: false, ArrowDown: false, KeyS: false,
             Enter:false, KeyE:false };
-        this.activeCar = undefined;
-        this.cursors = undefined;
-        this.startGameTitle = undefined;
-        this.startGameOptions = undefined;
-        this.playerName = undefined;
-        this.cars = {};
+            
         this.people = {};
-        this.userInputText = { isActive: false };
-        this.objectivesComplete = { sitInACar: false, driveAround: false, leaveCar: false };
+        this.cars = {};
         this.load.image({
             key: 'tiles',
             url: 'images/sity-2d/Tilemap/tilemap_packed.png',
@@ -30,11 +23,6 @@ export class MapViewScene extends Phaser.Scene {
         this.load.image('car', 'images/racingpack/PNG/Cars/car_black_1.png');
         this.load.image('car2', 'images/racingpack/PNG/Cars/car_red_4.png');
         this.load.image('checkImage', 'images/check.svg');
-
-        this.load.plugin('rexoutlinepipelineplugin', './lib/phaser3-rex-plugins/dist/rexoutlinepipelineplugin.min.js', true);
-        this.load.plugin('rexcanvasinputplugin', './lib/phaser3-rex-plugins/dist/canvasinput-plugin.min.js', true);
-
-        this.load.scenePlugin('rexuiplugin', './lib/phaser3-rex-plugins/dist/rexuiplugin.js', 'rexUI', 'rexUI');
 
         this.load.audio('startMenuSelect', '/assets/start_menu_select.mp3');
 
@@ -91,8 +79,6 @@ export class MapViewScene extends Phaser.Scene {
     }
 
     buildMap () {
-        //buildings = scene.physics.add.staticGroup();
-        this.cursors = this.input.keyboard.createCursorKeys(); 
         //  Parse the data out of the map
         const map = this.make.tilemap({ key: 'map'});
     
@@ -109,13 +95,6 @@ export class MapViewScene extends Phaser.Scene {
         
         var riverLayer = map.createLayer('river', tileset);
 
-        this.riverLayerDimensions = {
-            minWidth: null,
-            minHeight: null,
-            maxWidth: 0,
-            maxHeight: 0
-        };
-
         housesLayer.setCollisionByExclusion([-1]);
         riverLayer.setCollisionByExclusion([-1]);
 
@@ -125,13 +104,10 @@ export class MapViewScene extends Phaser.Scene {
         this.matter.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
         this.cars["car"] = this.createCar(248, 500, 0, 0.9, 100, 'car');
-        this.cars["car"].locked = true;
         this.cars["car2"] = this.createCar(535, 93, 90, 1.2, 500, 'car2');
 
         this.people["monica"] = this.createPerson(190, 450, "monica", 15);
         this.people["joe"] =  this.createPerson(130, 510, "joe", 51);
-        
-        this.pipelineInstance = this.plugins.get("rexoutlinepipelineplugin");
 
         this.createPlayer(200, 450);
 
@@ -150,17 +126,12 @@ export class MapViewScene extends Phaser.Scene {
     
     }
 
-    gameOver() {
-        console.warn("game over");
-    }
-
     pressKeyActionPlayer(event) {
         const code = event.code,
             keyPressed = this.keyPressed;
 
         keyPressed[code] = true;
 
-        console.log(`Key code value: ${code}`);
         this.player.setRotation(0);
         if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
             this.player.thrustLeft(0.1);
@@ -188,7 +159,6 @@ export class MapViewScene extends Phaser.Scene {
         const code = event.code,
             keyPressed = this.keyPressed;
             
-        console.log(code);
         if (keyPressed["ArrowUp"] || keyPressed["KeyW"]){
             this.player.setVelocityY(0);
            
@@ -213,14 +183,7 @@ export class MapViewScene extends Phaser.Scene {
         keyPressed[code] = false;
     }
 
-    destroyPlayer() {
-        console.log("destroy");
-        this.removePlayerListeners();
-        this.player.destroy();
-    }
-
     createPlayer(posX, posY) {
-        console.log("setup player");
         this.player = this.createPerson(posX, posY);
         this.player.setStatic(false);
         this.setupPlayerListeners();
