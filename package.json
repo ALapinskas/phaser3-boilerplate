@@ -10,7 +10,7 @@
     "start": "./node_modules/.bin/autoreload-server -w 'dist/**.{html,css,js}' -m ./assets -t /assets -m ./images -t /images ./dist 8088",
     "build-dev": "./node_modules/.bin/google-closure-compiler --js='./src/**.js' -O 'BUNDLE' --js_output_file='./dist/main.min.js'",
     "build-prod": "./node_modules/.bin/google-closure-compiler --js='./src/**.js' -O 'ADVANCED' --js_output_file='./dist/main.min.js'",
-    "copy-libs": "cp -R ./node_modules/phaser ./node_modules/phaser3-rex-plugins ./dist/lib",
+    "copy-libs": "mkdir ./dist/lib && cp -R ./node_modules/phaser ./node_modules/phaser3-rex-plugins ./dist/lib",
     "watch": "npm-watch"
   },
   "author": "Arturas-Alfredas Lapinskas",

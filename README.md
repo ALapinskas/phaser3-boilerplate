@@ -22,6 +22,8 @@ phaser3 game boilerplate
 4. Controls scene
     - options button
 
+5. Free assets to play with
+
 # run
 
 npm i
@@ -36,4 +38,4 @@ visit localhost:8088
 npm run watch
 
 # items used
-Kenney sity-2d and racingpack free game assets
+Kenney sity-2d, racingpack and Klink/Tazmoe prototypeShooter free game assets
