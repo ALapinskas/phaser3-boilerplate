@@ -9,14 +9,8 @@ phaser3 game boilerplate
     - sound volume control
 
 3. Map scene
-    - map from a tilemaps
-    - basic characters
-    - basic map objects
-    - text objects
-    - main player navigation
-    - main player animations
-    - boundaries
     - collisions listener
+    - keyboard keys listeners
    
 
 4. Controls scene
@@ -36,6 +30,3 @@ visit localhost:8088
 
 # watch
 npm run watch
-
-# items used
-Kenney sity-2d, racingpack and Klink/Tazmoe prototypeShooter free game assets
