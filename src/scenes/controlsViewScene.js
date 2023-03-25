@@ -18,6 +18,10 @@ export class ControlsViewScene extends Phaser.Scene {
             itemSelect: this.sound.add("startMenuSelect")
         }
         this.createSettingsIcon();
+        
+        window.addEventListener("resize", this.fixElementsPositions);
+
+        this.fixElementsPositions();
     }
     
     createSettingsIcon() {
@@ -84,5 +88,15 @@ export class ControlsViewScene extends Phaser.Scene {
         this.scene.sleep(CONSTANTS.SCENES.MAP_VIEW_SCENE);
         this.scene.sleep(CONSTANTS.SCENES.CONTROLS_VIEW_SCENE);
         this.scene.run(CONSTANTS.SCENES.OPTIONS_VIEW_SCENE, CONSTANTS.SCENES.CONTROLS_VIEW_SCENE);
+    }
+
+    cleanUpScene = () => {
+        window.removeEventListener('resize', this.fixElementsPositions);
+    }
+
+    fixElementsPositions = () => {
+        let { width, height } = this.sys.game.canvas;
+        //this.startGameTitle.x = width/2 - this.startGameTitle.width/2;
+        //this.startGameButtons.x = width/2;
     }
 }

@@ -17,7 +17,7 @@ export class StartViewScene extends Phaser.Scene {
         this.startMenuSounds = {
             itemSelect: this.sound.add("startMenuSelect")
         }
-        this.startGame = this.startGame.bind(this);
+        
         this.startGameTitle = this.add.text(260, 260, "Game title", {
             fontSize: 32,
         });
@@ -92,15 +92,34 @@ export class StartViewScene extends Phaser.Scene {
                 this.startMenuSounds.itemSelect.stop();
             }
         });
+
+        window.addEventListener("resize", this.fixElementsPositions);
+
+        this.fixElementsPositions();
     }
 
-    startGame() {
+    cleanUpScene = () => {
         document.removeEventListener('keydown', this.startGame);
+        window.removeEventListener('resize', this.fixElementsPositions);
+    }
+
+    startGame = () => {
+        this.cleanUpScene();
+        this.scene.stop(CONSTANTS.SCENES.START_VIEW_SCENE);
         this.scene.start(CONSTANTS.SCENES.MAP_VIEW_SCENE);
     }
 
     openSettingPage() {
+        this.cleanUpScene();
+        this.scene.stop(CONSTANTS.SCENES.START_VIEW_SCENE);
         this.scene.start(CONSTANTS.SCENES.OPTIONS_VIEW_SCENE, CONSTANTS.SCENES.START_VIEW_SCENE);
     }
     
+    fixElementsPositions = () => {
+        let { width, height } = this.sys.game.canvas;
+        this.startGameTitle.x = width/2 - this.startGameTitle.width/2;
+        this.startGameTitle.y = height/3;
+        this.startGameButtons.x = width/2;
+        this.startGameButtons.y = height/3 + this.startGameTitle.height + 80;
+    }
 }

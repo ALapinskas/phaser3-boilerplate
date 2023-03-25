@@ -1,5 +1,5 @@
 # phaser3 boilerplate
-phaser3 game boilerplate
+phaser3 game boilerplate, responsive and mobile friendly
 
 # Included
 1. Main menu
@@ -12,7 +12,6 @@ phaser3 game boilerplate
     - collisions listener
     - keyboard keys listeners
    
-
 4. Controls scene
     - options button
 
@@ -45,3 +44,5 @@ visit localhost:8088/index.html
 # Build a prod version for server (tested only from linux)
 
 npm run build-prod
+
+rename ./dist/index-for-prod.html to ./dist/index.html, copy ./assets folder to ./dist/assets and upload dist folder to the server

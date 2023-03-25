@@ -7,12 +7,17 @@ import { ControlsViewScene } from "./scenes/controlsViewScene.js";
 
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
     scene: StartViewScene,
     scale: {
-        //mode: Phaser.Scale.ENVELOP,
-        mode: Phaser.Scale.HEIGHT_CONTROLS_WIDTH,
+        mode: Phaser.Scale.RESIZE,
+        min: {
+            width: 270,
+            height: 480
+        },
+        max: {
+            width: 1920,
+            height: 1080
+        },
         autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     physics: {

@@ -5,11 +5,11 @@
   "main": "./src/main.js",
   "type": "module",
   "scripts": {
-    "start": "./node_modules/.bin/autoreload-server -W 'dist/**.{html,css,js}' --reload true -m ./assets -t /assets -m ./images -t /images -m ./src -t /src ./dist 8088",
-    "start-win": ".\\node_modules\\.bin\\autoreload-server --reload true -m ./assets -t /assets -m ./images -t /images -m ./src -t /src .\\dist 8088",
-    "copy-libs": "mkdir ./dist/lib && mkdir ./images && cp -R ./node_modules/phaser ./node_modules/phaser3-rex-plugins ./dist/lib",
-    "copy-libs-win": "mkdir .\\dist\\lib, .\\images | robocopy /S .\\node_modules\\phaser .\\dist\\lib\\phaser > nul | robocopy /S .\\node_modules\\phaser3-rex-plugins .\\dist\\lib\\phaser3-rex-plugins > nul",
-    "build-prod": "./node_modules/.bin/google-closure-compiler --js='./src/**.js' -O 'ADVANCED' --js_output_file='./dist/main.min.js'"
+    "start": "./node_modules/.bin/autoreload-server -W 'dist/**.{html,css,js}' --reload true -m ./assets -t /assets -m ./src -t /src ./dist 8088",
+    "start-win": ".\\node_modules\\.bin\\autoreload-server --reload true -m ./assets -t /assets -m ./src -t /src .\\dist 8088",
+    "copy-libs": "mkdir ./dist/lib  && cp -R ./node_modules/phaser ./node_modules/phaser3-rex-plugins ./dist/lib",
+    "copy-libs-win": "mkdir .\\dist\\lib | robocopy /S .\\node_modules\\phaser .\\dist\\lib\\phaser > nul | robocopy /S .\\node_modules\\phaser3-rex-plugins .\\dist\\lib\\phaser3-rex-plugins > nul",
+    "build-prod": "./node_modules/.bin/google-closure-compiler --js='./src/**.js' --js_output_file='./dist/main.min.js'"
   },
   "author": "Arturas-Alfredas Lapinskas",
   "license": "MIT",
