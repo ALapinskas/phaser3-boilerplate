@@ -144,6 +144,6 @@ export class OptionsViewScene extends Phaser.Scene {
         this.soundVolumeWidget.x = width/2 - 20;
         this.soundVolumeWidget.y = height/2 - 80;
         this.settingsPageButtons.x = width/2 - 20;
-        this.settingsPageButtons.y - height/2;
+        this.settingsPageButtons.y = height/2;
     }
 }
