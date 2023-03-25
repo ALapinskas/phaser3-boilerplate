@@ -18,15 +18,30 @@ phaser3 game boilerplate
 
 5. Free assets to play with
 
-# run
+# install libs:
 
 npm i
+
+# Copy folders
+
 npm run copy-libs
-!!! on Windows you will have manually copy "phaser" and "phaser3-rex-plugins" modules to the ./dist/lib folder
 
-npm run build-dev
+# Copy folders on Windows:
+
+npm run copy-libs-win
+
+# Run with autoreloadserver:
+
 npm start
-visit localhost:8088
 
-# watch
-npm run watch
+visit localhost:8088/index.html
+
+# Run on Windows:
+
+npm run start-win
+
+visit localhost:8088/index.html
+
+# Build a prod version for server (tested only from linux)
+
+npm run build-prod

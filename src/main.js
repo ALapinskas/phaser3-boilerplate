@@ -27,8 +27,8 @@ const config = {
     }
 };
 
-document.onreadystatechange = function () {
-    if (document.readyState == "interactive") {
+document.onreadystatechange = function (event) {
+    if (event.target.readyState == "interactive" || event.target.readyState === "complete") {
         var game = new Phaser.Game(config);
         game.scene.add(CONSTANTS.SCENES.MAP_VIEW_SCENE, MapViewScene);
         game.scene.add(CONSTANTS.SCENES.OPTIONS_VIEW_SCENE, OptionsViewScene);
