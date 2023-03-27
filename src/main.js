@@ -7,12 +7,17 @@ import { ControlsViewScene } from "./scenes/controlsViewScene.js";
 
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
     scene: StartViewScene,
     scale: {
-        //mode: Phaser.Scale.ENVELOP,
-        mode: Phaser.Scale.HEIGHT_CONTROLS_WIDTH,
+        mode: Phaser.Scale.RESIZE,
+        min: {
+            width: 390,
+            height: 844
+        },
+        max: {
+            width: 1920,
+            height: 1080
+        },
         autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     physics: {
@@ -27,8 +32,8 @@ const config = {
     }
 };
 
-document.onreadystatechange = function () {
-    if (document.readyState == "interactive") {
+document.onreadystatechange = function (event) {
+    if (event.target.readyState == "interactive" || event.target.readyState === "complete") {
         var game = new Phaser.Game(config);
         game.scene.add(CONSTANTS.SCENES.MAP_VIEW_SCENE, MapViewScene);
         game.scene.add(CONSTANTS.SCENES.OPTIONS_VIEW_SCENE, OptionsViewScene);

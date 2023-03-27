@@ -1,4 +1,4 @@
-import CONSTANTS from "../constants";
+import CONSTANTS from "../constants.js";
 
 export class OptionsViewScene extends Phaser.Scene {
     constructor() {
@@ -24,7 +24,7 @@ export class OptionsViewScene extends Phaser.Scene {
         this.soundLabel = this.add.text(150, 200, 'sound volume:').setDepth(2);
         this.soundVolumeWidget = this.rexUI.add.slider({
             x: 380,
-            y: 210,
+            y: 250,
             width: 200,
             height: 20,
             orientation: 'x',
@@ -113,6 +113,10 @@ export class OptionsViewScene extends Phaser.Scene {
                 this.startMenuSounds.itemSelect.stop();
             }
         });
+
+        window.addEventListener("resize", this.fixElementsPositions);
+
+        this.fixElementsPositions();
     }
 
     resetSettings() {
@@ -122,9 +126,24 @@ export class OptionsViewScene extends Phaser.Scene {
     }
 
     hideSettingPage() {
+        this.cleanUpScene();
         this.scene.stop(CONSTANTS.SCENES.OPTIONS_VIEW_SCENE);
         this.scene.run(this.cameFrom);
         if (this.cameFrom === CONSTANTS.SCENES.CONTROLS_VIEW_SCENE)
             this.scene.run(CONSTANTS.SCENES.MAP_VIEW_SCENE);
+    }
+
+    cleanUpScene = () => {
+        window.removeEventListener('resize', this.fixElementsPositions);
+    }
+
+    fixElementsPositions = () => {
+        let { width, height } = this.sys.game.canvas;
+        this.soundLabel.x = width/2 - this.soundVolumeWidget.width/2 - 20;
+        this.soundLabel.y = height/2 - 120;
+        this.soundVolumeWidget.x = width/2 - 20;
+        this.soundVolumeWidget.y = height/2 - 80;
+        this.settingsPageButtons.x = width/2 - 20;
+        this.settingsPageButtons.y = height/2;
     }
 }

@@ -1,4 +1,4 @@
-import CONSTANTS from "../constants";
+import CONSTANTS from "../constants.js";
 
 export class MapViewScene extends Phaser.Scene {
     constructor() {
@@ -15,12 +15,12 @@ export class MapViewScene extends Phaser.Scene {
         this.load.audio('startMenuSelect', '/assets/start_menu_select.mp3');
 
         this.scene.run(CONSTANTS.SCENES.CONTROLS_VIEW_SCENE);
-
-        this.pressKeyActionPlayer = this.pressKeyActionPlayer.bind(this);
-        this.removeKeyActionPlayer = this.removeKeyActionPlayer.bind(this);
     }
 
     create() {
+        window.addEventListener("resize", this.fixElementsPositions);
+
+        this.fixElementsPositions();
     }
 
     buildMap () {
@@ -95,5 +95,13 @@ export class MapViewScene extends Phaser.Scene {
     removePlayerListeners() {
         document.removeEventListener('keydown', this.pressKeyActionPlayer);
         document.removeEventListener('keyup', this.removeKeyActionPlayer);
+    }
+
+    cleanUpScene = () => {
+        window.removeEventListener('resize', this.fixElementsPositions);
+    }
+
+    fixElementsPositions = () => {
+        let { width, height } = this.sys.game.canvas;
     }
 }
