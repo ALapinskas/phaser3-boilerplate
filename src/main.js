@@ -11,8 +11,8 @@ const config = {
     scale: {
         mode: Phaser.Scale.RESIZE,
         min: {
-            width: 270,
-            height: 480
+            width: 390,
+            height: 844
         },
         max: {
             width: 1920,
