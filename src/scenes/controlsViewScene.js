@@ -9,8 +9,10 @@ export class ControlsViewScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.plugin('rexanchorplugin',"./lib/phaser3-rex-plugins/dist/rexanchorplugin.min.js", true);
-        this.load.scenePlugin('rexuiplugin', './lib/phaser3-rex-plugins/dist/rexuiplugin.js', 'rexUI', 'rexUI');
+        //this.load.plugin('rexanchorplugin',"./lib/phaser3-rex-plugins/dist/rexanchorplugin.min.js", true);
+        //this.load.scenePlugin('rexuiplugin', './lib/phaser3-rex-plugins/dist/rexuiplugin.js', 'rexUI', 'rexUI');
+        this.load.plugin('rexanchorplugin', 'https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.75/dist/rexanchorplugin.min.js', true);
+        this.load.scenePlugin('rexuiplugin', 'https://cdn.jsdelivr.net/npm/phaser3-rex-plugins@1.1.75/dist/rexuiplugin.min.js', 'rexUI', 'rexUI');
     }
 
     create() {

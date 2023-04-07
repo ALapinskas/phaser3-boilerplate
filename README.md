@@ -29,20 +29,12 @@ npm run copy-libs
 
 npm run copy-libs-win
 
-# Run with autoreloadserver:
+# Run with webpack devserver:
 
 npm start
-
-visit localhost:8088/index.html
-
-# Run on Windows:
-
-npm run start-win
 
 visit localhost:8088/index.html
 
 # Build a prod version for server (tested only from linux)
 
 npm run build-prod
-
-rename ./dist/index-for-prod.html to ./dist/index.html, copy ./assets folder to ./dist/assets and upload dist folder to the server
