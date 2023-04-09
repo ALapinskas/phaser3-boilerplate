@@ -1,11 +1,11 @@
 {
   "name": "phaser3-boilerplate",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "phaser3 game boilerplate",
   "main": "./src/main.js",
   "scripts": {
-    "copy-libs": "mkdir ./dist/lib  && cp -R ./node_modules/phaser ./node_modules/phaser3-rex-plugins ./dist/lib",
-    "copy-libs-win": "mkdir .\\dist\\lib | robocopy /S .\\node_modules\\phaser .\\dist\\lib\\phaser > nul | robocopy /S .\\node_modules\\phaser3-rex-plugins .\\dist\\lib\\phaser3-rex-plugins > nul",
+    "copy-libs": "mkdir ./dist/lib  && cp -R ./node_modules/phaser/dist/phaser.js ./node_modules/phaser3-rex-plugins/dist ./dist/lib",
+    "copy-libs-win": "mkdir .\\dist\\lib | robocopy /S .\\node_modules\\phaser\\dist\\phaser.js .\\dist\\lib > nul | robocopy /S .\\node_modules\\phaser3-rex-plugins\\dist .\\dist\\lib > nul",
     "start": "webpack serve --https --mode=development",
     "build-dev": "webpack --mode=development",
     "build-prod": "webpack --mode=production"
