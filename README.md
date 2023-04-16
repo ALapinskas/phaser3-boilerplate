@@ -35,6 +35,6 @@ npm start
 
 visit localhost:8088/index.html
 
-# Build a prod version for server (tested only from linux)
+# Build a prod version for server
 
 npm run build-prod
